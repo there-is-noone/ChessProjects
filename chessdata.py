@@ -5,12 +5,12 @@ class Cleangame():
         self.white=white
         self.black=black
         self.move=move
-    def inputgame(self,white,black,move):
-        return Cleangame(white,black,move)
     def show(self):
-        return f"This is a game between: {self.white} and {self.black} and it went like this: \n {self.move}"
+        return f"This is a game between: {self.white[0]} and {self.black[0]} and it went like this: \n {self.move}"
+    def verifygame(self):
+        pass
 def parse_games():
-    headers=[]
+    headers={}
     gamestart=False
     moves=[]
     count=0
@@ -21,28 +21,28 @@ def parse_games():
         elif line.startswith("["):
             line1=line.replace("[","")
             line1=line1.replace("]","")
-            if "White" not in line and "Black" not in line:
-                continue
-            headers.append(line1.replace("\n",""))
+            line1=line1.replace("\n","").split(" ", 1)
+            print(line1)
+            headers[line1[0]]=line1[1:]
         if gamestart:
             line1=line.split(" ")
             line1=[a.replace("\n","").split(".")[-1] for a in line1]
-            print(line1)
+#            print(line1)
             moves+=line1
             if line=="\n":
                 gamestart=False
                 moves=[a for a in moves if a]
-                Games[count]=Cleangame(headers[0],headers[1],moves)
+                Games[count]=Cleangame(headers["White"],headers["Black"],moves)
                 moves=[]
                 headers.clear()
                 count+=1
     for nr,game in Games.items():
         print(f"Game number {nr}\n{Games[nr].show()}")
 def separate():
-
     pass
 def get():
     pass
 def main():
     pass
-print(parse_games())
+if __name__=="__main__":
+    parse_games()
