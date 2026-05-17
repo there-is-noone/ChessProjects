@@ -69,6 +69,15 @@ class Player:
             else:
                 return 0.5
 
+    def short_game_rate(self):
+        counter_short=0
+        counter=1
+        for games in self.GamesWhite+self.GamesBlack:
+            if games.how_many_moves()<=25:
+                counter_short+=1
+            counter+=1
+        return round((counter_short/counter)*100,2)
+
 @dataclass
 class AnalyzedGame:
     def __init__(self,game):
@@ -95,3 +104,4 @@ if __name__=="__main__":
     print(test.winrate_white())
     print(test.winrate_black())
     print(test.winrate())
+    print(test.short_game_rate())
