@@ -1,0 +1,97 @@
+from dataclasses import dataclass
+import chess.pgn
+@dataclass
+class Player:
+    PlayerName: str
+    GamesWhite: list[AnalyzedGame]
+    GamesBlack: list[AnalyzedGame]
+
+    def __init__(self,playername:str):
+        self.GamesWhite=[game1 for game1 in gameList.values() if game1.game.headers["White"]==playername]
+        self.GamesBlack=[game1 for game1 in gameList.values() if game1.game.headers["Black"]==playername]
+
+    def __str__(self):
+        result = ""
+        for whitegame in self.GamesWhite:
+            result += f"{whitegame.game.headers["White"]} vs {whitegame.game.headers["Black"]}:{whitegame.get_result()}\n"
+        for blackgame in self.GamesBlack:
+            result += f"{blackgame.game.headers["White"]} vs {blackgame.game.headers["Black"]}:{blackgame.get_result()}\n"
+        return result
+
+    def winrate_white(self):
+        result=0
+        count=0
+        for whitegame in self.GamesWhite:
+            result+=self.did_player_win(whitegame,1)
+            count+=1
+        return round((result/count*100),2)
+
+    def winrate_black(self):
+        result = 0
+        count=0
+        for blackgame in self.GamesBlack:
+            result += self.did_player_win(blackgame, 0)
+            count+=1
+        return round((result / count)*100,2)
+
+    def winrate(self):
+        result=0
+        count=0
+        for blackgame in self.GamesBlack:
+            result += self.did_player_win(blackgame, 0)
+            count+=1
+
+        for whitegame in self.GamesWhite:
+            result+=self.did_player_win(whitegame,1)
+            count+=1
+
+        return round((result / count)*100,2)
+
+    def did_player_win(self, game: AnalyzedGame, color:int) ->float | None:
+        """Checks if the player that we're searching for won or lost
+            returns:
+            1 if won
+            -1 if lost
+            0 for a draw"""
+
+        if color:
+            if game.get_result()=="1-0":
+                return 1.0
+            elif game.get_result()=="0-1":
+                return 0.0
+            else:
+                return 0.5
+        else:
+            if game.get_result()=="1-0":
+                return 0.0
+            elif game.get_result()=="0-1":
+                return 1.0
+            else:
+                return 0.5
+
+@dataclass
+class AnalyzedGame:
+    def __init__(self,game):
+        self.game=game
+
+    def get_result(self) -> str:
+        return self.game.headers["Result"]
+
+    def __str__(self):
+        return self.game.headers
+
+    def how_many_moves(self) -> int:
+        return self.game.end().ply()//2
+
+if __name__=="__main__":
+    gameList={}
+    with open("/home/kkrec/chessgames/Berliner.pgn", encoding="utf-8") as games:
+        nr=1
+        while game:=chess.pgn.read_game(games):
+            gameList[nr]=AnalyzedGame(game)
+            nr+=1
+    test=Player("Berliner, Hans Jack")
+    print(test)
+    print(test.winrate_white())
+    print(test.winrate_black())
+    print(test.winrate())
