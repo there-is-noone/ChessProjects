@@ -2,6 +2,61 @@ from dataclasses import dataclass
 import chess.pgn
 import chess
 from Enum import Color
+from stockfish import Stockfish
+
+@dataclass
+class MoveAnalysis:
+    def __init__(self,move,loss,eval_before,eval_after):
+        self.move=move
+        self.loss=loss
+        self.eval_before=eval_before
+        self.eval_after=eval_after
+
+@dataclass
+class EngineAnalyzer:
+    engine:Stockfish
+    def analyze_game(self, game):
+        board=game.board()
+        result=[]
+        for move in game.mainline_moves():
+            loss,eval_before,eval_after=self.analyze_move(board,move)
+            result.append(MoveAnalysis(move,loss,eval_before,eval_after))
+            board.push(move)
+        return result
+
+
+
+
+@dataclass
+class AnalyzedGame:
+    game:chess.pgn.Game
+    _move_analysis:list
+    engine:Stockfish
+    def __init__(self, game,engine):
+        self.game = game
+        self._move_analysis = []
+        self.engine=engine
+    def get_result(self) -> str:
+        return self.game.headers["Result"]
+
+    def __str__(self):
+        return self.game.headers
+
+    def how_many_moves(self) -> int:
+        return self.game.end().ply() // 2
+
+    def find_ending_flag(self):
+        board = self.game.end().board()
+        outcome = board.outcome()
+
+        if outcome:
+            return outcome.termination.name.lower()
+
+        return self.game.headers.get("Termination", "unknown").lower()
+    def analyze_game(self):
+        if not self._move_analysis:
+            analyzing=EngineAnalyzer(self.engine)
+            analyzing.analyze_game(game)
 
 
 @dataclass
@@ -9,6 +64,7 @@ class Player:
     PlayerName: str
     GamesWhite: list[AnalyzedGame]
     GamesBlack: list[AnalyzedGame]
+    Games: list[AnalyzedGame]
 
     def __init__(self, playername: str):
         self.GamesWhite = [
@@ -21,6 +77,7 @@ class Player:
             for game1 in gameList.values()
             if game1.game.headers["Black"] == playername
         ]
+        self.Games = self.GamesBlack + self.GamesWhite
 
     def __str__(self):
         result = ""
@@ -49,14 +106,9 @@ class Player:
     def winrate(self):
         result = 0
         count = 0
-        for blackgame in self.GamesBlack:
-            result += self.did_player_win(blackgame, 0)
+        for game in self.Games:
+            result += self.did_player_win(game, 0)
             count += 1
-
-        for whitegame in self.GamesWhite:
-            result += self.did_player_win(whitegame, 1)
-            count += 1
-
         return round((result / count) * 100, 2)
 
     def did_player_win(self, game: AnalyzedGame, color: int) -> float | None:
@@ -99,38 +151,15 @@ class Player:
         return round((counter_short_wins / counter) * 100, 2)
 
 
-@dataclass
-class AnalyzedGame:
-    def __init__(self, game):
-        self.game = game
-
-    def get_result(self) -> str:
-        return self.game.headers["Result"]
-
-    def __str__(self):
-        return self.game.headers
-
-    def how_many_moves(self) -> int:
-        return self.game.end().ply() // 2
-
-    def find_ending_flag(self):
-        board = self.game.end().board()
-        outcome = board.outcome()
-
-        if outcome:
-            return outcome.termination.name.lower()
-
-        return self.game.headers.get("Termination", "unknown").lower()
-
-
 if __name__ == "__main__":
+    stockfish = Stockfish("/home/kkrec/stockfish/stockfish-ubuntu-x86-64-avx2")
     gameList = {}
     with open(
         "/home/kkrec/chessgames/lichess_gracznumerx_2026-05-25.pgn", encoding="utf-8"
     ) as games:
         nr = 1
         while game := chess.pgn.read_game(games):
-            gameList[nr] = AnalyzedGame(game)
+            gameList[nr] = AnalyzedGame(game,stockfish)
             nr += 1
     test = Player("gracznumerx")
     print(test)
@@ -140,3 +169,4 @@ if __name__ == "__main__":
     print(test.short_game_rate())
     print(test.short_game_win_rate())
     print(test.GamesBlack[13].find_ending_flag())
+    stockfish.send_quit_command()
