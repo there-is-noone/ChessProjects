@@ -1,5 +1,5 @@
-from collections import deque
-from dataclasses import dataclass
+import asyncio
+from dataclasses import dataclass,field
 from utils.moveanalysis import MoveAnalysis
 import chess.engine
 import chess.pgn
@@ -7,19 +7,16 @@ import chess.pgn
 
 @dataclass
 class EngineAnalyzer:
-    engine: chess.engine.SimpleEngine
-    cache: dict = None
+    engine: chess.engine.Protocol
+    cache: dict = field(default_factory=dict)
 
-    def __post_init__(self):
-        self.cache = {}
-
-    def get_eval(self, board):
+    async def get_eval(self, board):
         fen = board.fen()
 
         if fen in self.cache:
             return self.cache[fen]
 
-        info = self.engine.analyse(board, chess.engine.Limit(depth=10))
+        info = await self.engine.analyse(board, chess.engine.Limit(nodes=40000), info=chess.engine.INFO_SCORE)
 
         score = info["score"].relative
 
@@ -32,17 +29,17 @@ class EngineAnalyzer:
 
         return value
 
-    def analyze_game(self, game):
+    async def analyze_game(self, game):
         board = game.board()
         result = []
-        prev_eval = self.get_eval(board)
+        prev_eval = await self.get_eval(board)
         for move in game.mainline_moves():
             board.push(move)
             if abs(prev_eval) > 500:
                 current_eval = prev_eval
                 loss = 0
             else:
-                current_eval = self.get_eval(board)
+                current_eval = await self.get_eval(board)
                 loss = abs(prev_eval - current_eval)
 
             result.append(MoveAnalysis(move, loss, prev_eval, current_eval))

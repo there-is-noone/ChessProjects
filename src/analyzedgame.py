@@ -28,13 +28,13 @@ class AnalyzedGame:
 
         return self.game.headers.get("Termination", "unknown").lower()
 
-    def get_analysis(self):
+    async def get_analysis(self):
         if not self._move_analysis:
-            self._move_analysis = self.analyzer.analyze_game(self.game)
+            self._move_analysis = await self.analyzer.analyze_game(self.game)
         return self._move_analysis
 
-    def get_acpl(self):
-        moves = self.get_analysis()
+    async def get_acpl(self):
+        moves = await self.get_analysis()
         return round(sum(m.loss for m in moves) / len(moves), 2) if moves else 0
 
     @staticmethod

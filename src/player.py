@@ -1,4 +1,7 @@
 from dataclasses import dataclass
+
+import chess
+
 from analyzedgame import AnalyzedGame
 
 
@@ -36,7 +39,7 @@ class Player:
         result = 0
         count = 0
         for whitegame in self.GamesWhite:
-            result += self.did_player_win(whitegame, 1)
+            result += self.did_player_win(whitegame, chess.WHITE)
             count += 1
         return round((result / count * 100), 2) if count else 0
 
@@ -44,7 +47,7 @@ class Player:
         result = 0
         count = 0
         for blackgame in self.GamesBlack:
-            result += self.did_player_win(blackgame, 0)
+            result += self.did_player_win(blackgame, chess.BLACK)
             count += 1
         return round((result / count) * 100, 2) if count else 0
 
@@ -57,7 +60,7 @@ class Player:
             count += 1
         return round((total / count) * 100, 2) if count else 0
 
-    def did_player_win(self, game: AnalyzedGame, color: bool) -> float | None:
+    def did_player_win(self, game: AnalyzedGame, color: chess.Color) -> float:
         """Checks if the player that we're searching for won or lost
         returns:
         1.0 if won
