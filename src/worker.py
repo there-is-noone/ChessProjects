@@ -6,6 +6,7 @@ import atexit
 from engineanalyzer import EngineAnalyzer
 from utils.stopwatch import Timer
 
+
 def close_engine():
     global ENGINE
     if ENGINE is not None:
@@ -18,12 +19,13 @@ def init_engine():
     ENGINE = chess.engine.SimpleEngine.popen_uci(
         "/home/kkrec/stockfish/stockfish-ubuntu-x86-64-avx2"
     )
-    ENGINE.configure({"Threads":4})
+    ENGINE.configure({"Threads": 4})
     atexit.register(close_engine)
 
 
 def analyze_game_worker(pgn_text: str):
     import psutil, os
+
     global ENGINE
     game = chess.pgn.read_game(io.StringIO(pgn_text))
 

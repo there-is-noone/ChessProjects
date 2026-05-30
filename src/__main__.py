@@ -1,5 +1,6 @@
 import asyncio
 from utils.Config import ConfigData
+from utils.EngineStrategies import EngineStrategies
 from utils.stopwatch import Timer
 import chess.engine
 import chess.pgn
@@ -9,14 +10,12 @@ from analyzedgame import AnalyzedGame
 
 
 async def main():
-    transport, engine = await chess.engine.popen_uci(
-        ConfigData.ENGINE_PATH
-    )
-    await engine.configure({"Threads":ConfigData.THREADS})
+    transport, engine = await chess.engine.popen_uci(ConfigData.ENGINE_PATH)
+    await engine.configure({"Threads": ConfigData.THREADS})
+    strategy:EngineStrategies
+    analyzer = EngineAnalyzer(engine,strategy)
 
-    analyzer = EngineAnalyzer(engine)
-
-    test = Player("gracznumerx", [], [], [])
+    test = Player("gracznumerx")
     with open(
         "/home/kkrec/chessgames/lichess_gracznumerx_2026-05-25.pgn", encoding="utf-8"
     ) as games:
@@ -30,12 +29,10 @@ async def main():
     print("Endgame rate:", test.endgame_rate(), "%")
     print("Endgame win rate:", test.endgame_win_rate(), "%")
 
-
     with Timer("Analysis"):
         for game in test.Games:
             with Timer(f"Single Game"):
                 await game.get_analysis()
-
 
     await engine.quit()
 
