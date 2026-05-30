@@ -1,6 +1,7 @@
 import asyncio
 from dataclasses import dataclass,field
 from utils.moveanalysis import MoveAnalysis
+from utils.Config import ConfigData
 import chess.engine
 import chess.pgn
 
@@ -16,7 +17,7 @@ class EngineAnalyzer:
         if fen in self.cache:
             return self.cache[fen]
 
-        info = await self.engine.analyse(board, chess.engine.Limit(nodes=40000), info=chess.engine.INFO_SCORE)
+        info = await self.engine.analyse(board, chess.engine.Limit(ConfigData.NODES), info=chess.engine.INFO_SCORE)
 
         score = info["score"].relative
 
@@ -35,7 +36,7 @@ class EngineAnalyzer:
         prev_eval = await self.get_eval(board)
         for move in game.mainline_moves():
             board.push(move)
-            if abs(prev_eval) > 500:
+            if abs(prev_eval) > ConfigData.EVALUATION_LIMIT:
                 current_eval = prev_eval
                 loss = 0
             else:

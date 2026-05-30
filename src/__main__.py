@@ -1,6 +1,7 @@
 import asyncio
 import os
 
+from utils.Config import ConfigData
 from utils.stopwatch import Timer
 import chess.engine
 import chess.pgn
@@ -11,9 +12,9 @@ from analyzedgame import AnalyzedGame
 
 async def main():
     transport, engine = await chess.engine.popen_uci(
-        "/home/kkrec/stockfish/stockfish-ubuntu-x86-64-avx2"
+        ConfigData.ENGINE_PATH
     )
-    await engine.configure({"Threads":os.cpu_count()-2})
+    await engine.configure({"Threads":ConfigData.THREADS})
 
     analyzer = EngineAnalyzer(engine)
 
