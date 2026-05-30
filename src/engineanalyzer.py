@@ -17,7 +17,7 @@ class EngineAnalyzer:
         if fen in self.cache:
             return self.cache[fen]
 
-        info = await self.engine.analyse(board, chess.engine.Limit(ConfigData.NODES), info=chess.engine.INFO_SCORE)
+        info = await self.engine.analyse(board, chess.engine.Limit(nodes=ConfigData.NODES), info=chess.engine.INFO_SCORE)
 
         score = info["score"].relative
 

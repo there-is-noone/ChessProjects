@@ -1,6 +1,6 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from engineanalyzer import EngineAnalyzer
-import chess
+import chess.pgn
 from utils.moveanalysis import MoveAnalysis
 
 
@@ -8,7 +8,7 @@ from utils.moveanalysis import MoveAnalysis
 class AnalyzedGame:
     game: chess.pgn.Game
     analyzer: EngineAnalyzer
-    _move_analysis: list[MoveAnalysis]
+    _move_analysis: list[MoveAnalysis] = field(default_factory=list)
 
     def get_result(self) -> str:
         return self.game.headers["Result"]

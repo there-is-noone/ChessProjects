@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import chess
 
@@ -8,9 +8,9 @@ from analyzedgame import AnalyzedGame
 @dataclass
 class Player:
     PlayerName: str
-    GamesWhite: list[AnalyzedGame]
-    GamesBlack: list[AnalyzedGame]
-    Games: list[AnalyzedGame]
+    GamesWhite: list[AnalyzedGame] = field(default_factory=list)
+    GamesBlack: list[AnalyzedGame] = field(default_factory=list)
+    Games: list[AnalyzedGame] = field(default_factory=list)
 
     def _iterate_games(self):
         for game in self.GamesWhite:

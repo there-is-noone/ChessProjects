@@ -1,6 +1,4 @@
 import asyncio
-import os
-
 from utils.Config import ConfigData
 from utils.stopwatch import Timer
 import chess.engine
@@ -31,9 +29,11 @@ async def main():
     print("Short game winrate:", test.short_game_win_rate(), "%")
     print("Endgame rate:", test.endgame_rate(), "%")
     print("Endgame win rate:", test.endgame_win_rate(), "%")
+
+
     with Timer("Analysis"):
-        for i,game in test.Games:
-            with Timer(f"{i} Single Game"):
+        for game in test.Games:
+            with Timer(f"Single Game"):
                 await game.get_analysis()
 
 
