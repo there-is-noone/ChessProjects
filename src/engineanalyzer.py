@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
+
+import chess.engine
+import chess
 from utils.moveanalysis import MoveAnalysis
-from utils.Config import ConfigData
 from utils.EngineStrategies import EngineStrategies
 import chess.engine
 import chess.pgn
@@ -9,14 +11,23 @@ import chess.pgn
 @dataclass
 class EngineAnalyzer:
     engine: chess.engine.Protocol
-    strategy:EngineStrategies
+    strategy: EngineStrategies
     cache: dict = field(default_factory=dict)
 
-    async def get_eval(self, board:chess.Board) -> float:
-        if self.strategy.time_limit:
-            limit=chess.engine.Limit(time=self.strategy.time_limit)
+    @staticmethod
+    def _score_to_value(score: chess.engine.Score) -> float:
+        if score.is_mate():
+            value = 10000 if score.mate() > 0 else -10000
         else:
-            limit=chess.engine.Limit(nodes=self.strategy.nodes)
+            value = score.score()
+        return value
+
+    async def get_eval(self, board: chess.Board) -> float:
+
+        if self.strategy.time_limit:
+            limit = chess.engine.Limit(time=self.strategy.time_limit)
+        else:
+            limit = chess.engine.Limit(nodes=self.strategy.nodes)
 
         fen = board.fen()
 
@@ -37,16 +48,29 @@ class EngineAnalyzer:
             value = score.score()
 
         self.cache[fen] = value
-
         return value
 
-    async def analyze_game(self, game)->list[MoveAnalysis]:
+    async def analyze_game(self, game: chess.pgn.Game) -> list[MoveAnalysis]:
         board = game.board()
         result = []
-        prev_eval = await self.get_eval(board)
-        for move in game.mainline_moves():
+        if game.eval():
+            prev_eval = game.eval().pov(board.turn)
+        else:
+            prev_eval = await self.get_eval(board)
+        node = game
+
+        while not node.is_end():
+            move = node.variations[0].move
+            node = node.variations[0]
             board.push(move)
-            if abs(prev_eval) > self.strategy.evaluation_threshold or board.ply() % self.strategy.eval_every_n_moves != 0:
+            if node.eval():
+                score = node.eval().pov(board.turn)
+                current_eval = self._score_to_value(score)
+                loss = abs(prev_eval - current_eval)
+            if (
+                abs(prev_eval) > self.strategy.evaluation_threshold
+                or board.ply() % self.strategy.eval_every_n_moves != 0
+            ):
                 current_eval = prev_eval
                 loss = 0
 

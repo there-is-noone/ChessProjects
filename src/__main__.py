@@ -1,24 +1,22 @@
 import asyncio
 from utils.Config import ConfigData
-from utils.EngineStrategies import EngineStrategies
 from utils.stopwatch import Timer
 import chess.engine
 import chess.pgn
 from engineanalyzer import EngineAnalyzer
 from player import Player
 from analyzedgame import AnalyzedGame
+from utils.EngineStrategies import STRATEGIES
 
 
 async def main():
     transport, engine = await chess.engine.popen_uci(ConfigData.ENGINE_PATH)
     await engine.configure({"Threads": ConfigData.THREADS})
-    strategy:EngineStrategies
-    analyzer = EngineAnalyzer(engine,strategy)
+    strategy = STRATEGIES[ConfigData.ENGINE_ANALYSIS_TYPE]
+    analyzer = EngineAnalyzer(engine, strategy)
 
-    test = Player("gracznumerx")
-    with open(
-        "/home/kkrec/chessgames/lichess_gracznumerx_2026-05-25.pgn", encoding="utf-8"
-    ) as games:
+    test = Player(ConfigData.PLAYER_NAME)
+    with open(ConfigData.FILE_PATH, encoding="utf-8") as games:
         nr = 1
         while game := chess.pgn.read_game(games):
             test.add_game(game=AnalyzedGame(game, analyzer, []))
