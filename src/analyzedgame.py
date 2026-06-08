@@ -3,6 +3,19 @@ from engineanalyzer import EngineAnalyzer
 import chess.pgn
 from utils.moveanalysis import MoveAnalysis
 
+def serialize_game(analyzed: AnalyzedGame):
+    analysis = analyzed._move_analysis
+
+    return {
+        "headers": dict(analyzed.game.headers),
+        "moves": [m.move.uci() for m in analysis],
+        "evals": [m.eval_after for m in analysis],
+        "losses": [m.loss for m in analysis],
+        "acpl_white": analyzed._acpl_white,
+        "acpl_black": analyzed._acpl_black,
+    }
+
+
 
 @dataclass
 class AnalyzedGame:
@@ -52,11 +65,10 @@ class AnalyzedGame:
             if black_moves else 0.0
         )
 
-        self._move_analysis = None
 
-
-    async def get_acpl_for_color(self, color: chess.Color) -> float:
+    async def get_acpl_for_color(self, color: chess.Color) -> float | None:
         """Return cached per-color ACPL. Triggers precompute_acpl if not yet done."""
+
         if self._acpl_white is None or self._acpl_black is None:
             await self.precompute_acpl()
         return self._acpl_white if color == chess.WHITE else self._acpl_black

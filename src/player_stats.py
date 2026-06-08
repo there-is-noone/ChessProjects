@@ -3,8 +3,8 @@ from collections import defaultdict
 from player import Player
 import chess
 import chess.pgn
-
-
+import utils.math_stat as math_stats
+import numpy
 
 @dataclass
 class PlayerStats:
@@ -17,6 +17,8 @@ class PlayerStats:
     _short_game_likeness: float | None = field(default=None)
     _short_game_winrate: float | None = field(default=None)
     _acpl:list | None = field(default=None)
+    _acpl_standard_deviation: float | None = field(default=None)
+    _coefficient_of_variation: float | None = field(default= None)
     _winrate_per_eco:dict | None=field(default=None)
 
 
@@ -28,7 +30,7 @@ class PlayerStats:
             for whitegame in self.player.GamesWhite:
                 result += self.player.did_player_win(whitegame, chess.WHITE)
                 count += 1
-            self._winrate_white = round((result / count * 100), 2) if count else 0
+            self._winrate_white =math_stats.percentage(result,count) if count else 0
         return self._winrate_white
 
     @property
@@ -39,7 +41,7 @@ class PlayerStats:
             for blackgame in self.player.GamesBlack:
                 result += self.player.did_player_win(blackgame, chess.BLACK)
                 count += 1
-            self._winrate_black = round((result / count) * 100, 2) if count else 0
+            self._winrate_black = math_stats.percentage(result,count) if count else 0
         return self._winrate_black
 
     @property
@@ -51,7 +53,7 @@ class PlayerStats:
             for game, color in self.player._iterate_games():
                 total += self.player.did_player_win(game, color) == 1.0
                 count += 1
-            self._winrate = round((total / count) * 100, 2) if count else 0
+            self._winrate = math_stats.percentage(total,count) if count else 0
         return self._winrate
 
     @property
@@ -65,7 +67,7 @@ class PlayerStats:
                 counter += 1
 
             self._short_game_likeness = (
-                round((counter_short / counter) * 100, 2) if counter else 0
+                math_stats.percentage(counter_short,counter) if counter else 0
             )
         return self._short_game_likeness
 
@@ -81,7 +83,7 @@ class PlayerStats:
                     counter += 1
 
             self._short_game_winrate = (
-                round((counter_short_wins / counter) * 100, 2) if counter else 0
+                math_stats.percentage(counter_short_wins,counter) if counter else 0
             )
         return self._short_game_winrate
 
@@ -95,7 +97,7 @@ class PlayerStats:
                     counter_endgame += 1
                 counter += 1
             self._ending_rate = (
-                round((counter_endgame / counter) * 100, 2) if counter else 0
+                math_stats.percentage(counter_endgame,counter) if counter else 0
             )
         return self._ending_rate
 
@@ -110,7 +112,7 @@ class PlayerStats:
                         counter_endgame_wins += 1
                     counter += 1
             self._ending_winrate = (
-                round((counter_endgame_wins / counter) * 100, 2) if counter else 0
+                math_stats.percentage(counter_endgame_wins,counter) if counter else 0
             )
         return self._ending_winrate
 
@@ -131,10 +133,16 @@ class PlayerStats:
 
 
             self._winrate_per_eco={
-                eco : [round((stats["wins"]/stats["total"]) *100, 2),round((stats["draw"]/stats["total"]) *100, 2),round((stats["loss"]/stats["total"]) *100, 2)]
+                eco : [math_stats.percentage(stats["wins"],stats["total"]),math_stats.percentage(stats["draw"],stats["total"]),math_stats.percentage(stats["loss"],stats["total"])]
                 for eco,stats in eco_data.items()
             }
         return self._winrate_per_eco
+
+
+    @property
+    def acpl_standard_deviation(self):
+        acpl_for_dev=[acpl for acpl in self._acpl if acpl]
+        return numpy.std(acpl_for_dev)
 
     async def get_acpl_list(self) -> list[float]:
         if self._acpl is None:
@@ -142,5 +150,10 @@ class PlayerStats:
 
             for game, color in self.player._iterate_games():
                 acpl=await game.get_acpl_for_color(color)
-                self._acpl.append(acpl)
+                if acpl != 0:
+                    self._acpl.append(acpl)
         return self._acpl
+
+    @property
+    def coefficient_of_variation(self):
+        return self.acpl_standard_deviation/math_stats.mean(self._acpl)
