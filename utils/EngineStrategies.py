@@ -17,7 +17,7 @@ class EngineStrategies:
 
 
 ACPL_FAST = EngineStrategies(
-    name="acpl_fast", eval_every_n_moves=2, time_limit=0.02, evaluation_threshold=500
+    name="acpl_fast", eval_every_n_moves=2, evaluation_threshold=500
 )
 
 ACPL_DEEP = EngineStrategies(

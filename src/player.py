@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 
 import chess
-
 from analyzedgame import AnalyzedGame
 
 
@@ -35,7 +34,8 @@ class Player:
             result += f"{blackgame.game.headers['White']} vs {blackgame.game.headers['Black']}:{blackgame.get_result()}\n"
         return result
 
-    def did_player_win(self, game: AnalyzedGame, color: chess.Color) -> float:
+    @staticmethod
+    def did_player_win(game: AnalyzedGame, color: chess.Color) -> float:
         """Checks if the player that we're searching for won or lost
         returns:
         1.0 if won

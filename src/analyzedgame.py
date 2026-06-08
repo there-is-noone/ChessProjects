@@ -9,6 +9,8 @@ class AnalyzedGame:
     game: chess.pgn.Game
     analyzer: EngineAnalyzer
     _move_analysis: list[MoveAnalysis] = field(default_factory=list)
+    _acpl_white: float | None = field(default=None)
+    _acpl_black: float | None = field(default=None)
 
     def get_result(self) -> str:
         return self.game.headers["Result"]
@@ -33,9 +35,37 @@ class AnalyzedGame:
             self._move_analysis = await self.analyzer.analyze_game(self.game)
         return self._move_analysis
 
-    async def get_acpl(self):
+    async def precompute_acpl(self):
+
+        if self._acpl_white is not None and self._acpl_black is not None:
+            return
         moves = await self.get_analysis()
-        return round(sum(m.loss for m in moves) / len(moves), 2) if moves else 0
+
+        white_moves = [m for m in moves if m.color == chess.WHITE]
+        black_moves = [m for m in moves if m.color == chess.BLACK]
+        self._acpl_white = (
+            round(sum(m.loss for m in white_moves) / len(white_moves), 2)
+            if white_moves else 0.0
+        )
+        self._acpl_black = (
+            round(sum(m.loss for m in black_moves) / len(black_moves), 2)
+            if black_moves else 0.0
+        )
+
+        self._move_analysis = None
+
+
+    async def get_acpl_for_color(self, color: chess.Color) -> float:
+        """Return cached per-color ACPL. Triggers precompute_acpl if not yet done."""
+        if self._acpl_white is None or self._acpl_black is None:
+            await self.precompute_acpl()
+        return self._acpl_white if color == chess.WHITE else self._acpl_black
+
+
+    async def get_acpl(self) -> float:
+        """Overall average centipawn loss (both sides combined)."""
+        moves = await self.get_analysis()
+        return round(sum(m.loss for m in moves) / len(moves), 2) if moves else 0.0
 
     @staticmethod
     def is_endgame(board: chess.Board) -> bool:
