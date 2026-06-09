@@ -9,11 +9,12 @@ import chess.pgn
 from utils.Config import ConfigData
 from collections import OrderedDict
 
+
 @dataclass
 class EngineAnalyzer:
     engine: chess.engine.Protocol
     strategy: EngineStrategies
-    cache: OrderedDict= field(default_factory=OrderedDict)
+    cache: OrderedDict = field(default_factory=OrderedDict)
 
     def _cache_get(self, fen: str) -> float | None:
         if fen in self.cache:
@@ -46,7 +47,7 @@ class EngineAnalyzer:
 
         fen = board.fen()
 
-        cached=self._cache_get(fen)
+        cached = self._cache_get(fen)
         if cached is not None:
             return cached
         info = await self.engine.analyse(
@@ -57,7 +58,7 @@ class EngineAnalyzer:
 
         score = self._score_to_value(info["score"].relative)
 
-        self._cache_set(fen,score)
+        self._cache_set(fen, score)
         return score
 
     async def analyze_game(self, game: chess.pgn.Game) -> list[MoveAnalysis]:
@@ -70,9 +71,11 @@ class EngineAnalyzer:
         node = game
 
         while not node.is_end():
-            moving_color=board.turn
+            moving_color = board.turn
             node = node.variations[0]
             move = node.move
+            board.push(move)
+
             if node.eval():
                 score = node.eval().pov(moving_color)
                 current_eval = self._score_to_value(score)
@@ -86,9 +89,10 @@ class EngineAnalyzer:
                 current_eval = raw_eval if board.turn == moving_color else -raw_eval
             loss = max(0.0, prev_eval - current_eval)
 
-            board.push(move)
 
-            result.append(MoveAnalysis(move, loss, prev_eval, current_eval,moving_color))
+            result.append(
+                MoveAnalysis(move, loss, prev_eval, current_eval, moving_color)
+            )
 
             prev_eval = -current_eval
 

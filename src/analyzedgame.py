@@ -3,6 +3,7 @@ from engineanalyzer import EngineAnalyzer
 import chess.pgn
 from utils.moveanalysis import MoveAnalysis
 
+
 def serialize_game(analyzed: AnalyzedGame):
     analysis = analyzed._move_analysis
 
@@ -14,7 +15,6 @@ def serialize_game(analyzed: AnalyzedGame):
         "acpl_white": analyzed._acpl_white,
         "acpl_black": analyzed._acpl_black,
     }
-
 
 
 @dataclass
@@ -49,7 +49,6 @@ class AnalyzedGame:
         return self._move_analysis
 
     async def precompute_acpl(self):
-
         if self._acpl_white is not None and self._acpl_black is not None:
             return
         moves = await self.get_analysis()
@@ -58,13 +57,14 @@ class AnalyzedGame:
         black_moves = [m for m in moves if m.color == chess.BLACK]
         self._acpl_white = (
             round(sum(m.loss for m in white_moves) / len(white_moves), 2)
-            if white_moves else 0.0
+            if white_moves
+            else 0.0
         )
         self._acpl_black = (
             round(sum(m.loss for m in black_moves) / len(black_moves), 2)
-            if black_moves else 0.0
+            if black_moves
+            else 0.0
         )
-
 
     async def get_acpl_for_color(self, color: chess.Color) -> float | None:
         """Return cached per-color ACPL. Triggers precompute_acpl if not yet done."""
@@ -72,7 +72,6 @@ class AnalyzedGame:
         if self._acpl_white is None or self._acpl_black is None:
             await self.precompute_acpl()
         return self._acpl_white if color == chess.WHITE else self._acpl_black
-
 
     async def get_acpl(self) -> float:
         """Overall average centipawn loss (both sides combined)."""

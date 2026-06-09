@@ -20,7 +20,9 @@ ECO_REGEX = re.compile(r"^[A-E]\d\d\Z")
 
 INVALID_SPACE = re.compile(r"\s{2,}|^\s|\s\Z|\s,")
 
-INVALID_CHARACTER = re.compile(r"[\u2013\u2014\u2015\u2012\u2011\u00AD\u200B-\u200F\u202A-\u202E\u2060-\u2064\uFEFF\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\u2028\u2029\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000\u2018\u2019\u201C\u201D\u2039\u203A\u00AB\u00BB]")
+INVALID_CHARACTER = re.compile(
+    r"[\u2013\u2014\u2015\u2012\u2011\u00AD\u200B-\u200F\u202A-\u202E\u2060-\u2064\uFEFF\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\u2028\u2029\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000\u2018\u2019\u201C\u201D\u2039\u203A\u00AB\u00BB]"
+)
 
 INVALID_WITH = re.compile(r"[^,:]\swith\b")
 
@@ -29,6 +31,7 @@ class Stats:
     def __init__(self) -> None:
         self.errors = 0
         self.warnings = 0
+
 
 class Reporter:
     def __init__(self, stats: Stats, file_name: str) -> None:
@@ -44,7 +47,12 @@ class Reporter:
         self.stats.warnings += 1
 
 
-def main(f: TextIO, reporter: Reporter, by_epd: Dict[str, List[str]], shortest_by_name: Dict[str, int]) -> None:
+def main(
+    f: TextIO,
+    reporter: Reporter,
+    by_epd: Dict[str, List[str]],
+    shortest_by_name: Dict[str, int],
+) -> None:
     prev_eco = ""
     prev_name = ""
 
@@ -57,40 +65,51 @@ def main(f: TextIO, reporter: Reporter, by_epd: Dict[str, List[str]], shortest_b
 
         if lno == 1:
             if cols != ["eco", "name", "pgn"]:
-                reporter.error(lno, f"expected eco, name, pgn")
+                reporter.error(lno, "expected eco, name, pgn")
             continue
 
         eco, name, pgn = cols
 
         if not ECO_REGEX.match(eco):
-            reporter.error(lno, f"invalid eco")
+            reporter.error(lno, "invalid eco")
             continue
 
         if INVALID_SPACE.search(name):
-            reporter.error(lno, f"invalid whitespace in name")
+            reporter.error(lno, "invalid whitespace in name")
             continue
 
         invalid_character = INVALID_CHARACTER.search(name)
         if invalid_character:
-            reporter.error(lno, f"invalid character in name: {invalid_character.group()!r} (U+{ord(invalid_character.group()):04X})")
+            reporter.error(
+                lno,
+                f"invalid character in name: {invalid_character.group()!r} (U+{ord(invalid_character.group()):04X})",
+            )
             continue
 
         try:
-            board = chess.pgn.read_game(io.StringIO(pgn), Visitor=chess.pgn.BoardBuilder)
+            board = chess.pgn.read_game(
+                io.StringIO(pgn), Visitor=chess.pgn.BoardBuilder
+            )
         except ValueError as err:
             reporter.error(lno, f"{err}")
             continue
 
         if not board:
-            reporter.error(lno, f"Empty pgn")
+            reporter.error(lno, "Empty pgn")
             continue
 
         allowed_lowers = ["with", "de", "der", "del", "von", "and"]
-        if not all([word[0].isupper() for word in re.split(r"\s|-", name) if word not in allowed_lowers and word.isalpha()]):
+        if not all(
+            [
+                word[0].isupper()
+                for word in re.split(r"\s|-", name)
+                if word not in allowed_lowers and word.isalpha()
+            ]
+        ):
             reporter.warning(lno, f"{name!r} word(s) beginning with lowercase letters")
 
         if INVALID_WITH.search(name):
-            reporter.warning(lno, f"'with' not separated with ',' or ':'")
+            reporter.warning(lno, "'with' not separated with ',' or ':'")
 
         for blacklisted in ["refused"]:
             if blacklisted in name.lower():
@@ -123,7 +142,14 @@ def main(f: TextIO, reporter: Reporter, by_epd: Dict[str, List[str]], shortest_b
         prev_eco = eco
         prev_name = name
 
-        print(eco, name, clean_pgn, " ".join(m.uci() for m in board.move_stack), epd, sep="\t")
+        print(
+            eco,
+            name,
+            clean_pgn,
+            " ".join(m.uci() for m in board.move_stack),
+            epd,
+            sep="\t",
+        )
 
 
 if __name__ == "__main__":
