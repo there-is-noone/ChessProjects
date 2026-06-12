@@ -8,6 +8,7 @@ import chess.engine
 import chess.pgn
 from engineanalyzer import EngineAnalyzer
 from player import Player
+from utils.moveanalysis import MoveAnalysis
 from analyzedgame import AnalyzedGame, serialize_game
 from utils.EngineStrategies import STRATEGIES
 from player_stats import PlayerStats
@@ -28,7 +29,9 @@ async def main():
     except FileNotFoundError:
         opening = openingbook.OpeningBook.build_trie()
         opening.save()
-    PICKLE_FILE = f"analysis{ConfigData.PLAYER_NAME}.pkl"
+    PICKLE_FILE = (
+        f"analysis{ConfigData.PLAYER_NAME}{ConfigData.ENGINE_ANALYSIS_TYPE}.pkl"
+    )
 
     if os.path.exists(PICKLE_FILE):
         with Timer("reading from file:"):
@@ -45,13 +48,35 @@ async def main():
                 analyzed = AnalyzedGame(game, analyzer)
                 analyzed._acpl_white = g.get("acpl_white")
                 analyzed._acpl_black = g.get("acpl_black")
-
+                analyzed._acpl_opening = g.get("acpl_opening")
+                analyzed._transition_opening_to_mid = g.get("transitin_ply")
                 test.add_game(analyzed)
+
+                if "losses" in g and "moves" in g:
+                    analyzed._move_analysis = [
+                        MoveAnalysis(
+                            move=chess.Move.from_uci(m_uci),
+                            loss=loss_val,
+                            eval_before=0.0,
+                            eval_after=eval_val,
+                            color=chess.WHITE if idx % 2 == 0 else chess.BLACK,
+                        )
+                        for idx, (m_uci, loss_val, eval_val) in enumerate(
+                            zip(g["moves"], g["losses"], g["evals"])
+                        )
+                    ]
     else:
         all_games_data = []
         with open(ConfigData.FILE_PATH, encoding="utf-8") as games:
             nr = 1
             while game := chess.pgn.read_game(games):
+                try:
+                    board = chess.Board()
+                    for move in game.mainline_moves():
+                        board.push(move)
+                except AssertionError:
+                    print("Skipping invalid game:", game.headers.get("Event", "?"))
+                    continue
                 analyzed = AnalyzedGame(game, analyzer)
                 test.add_game(analyzed)
                 with Timer("Analysis"):
@@ -83,10 +108,16 @@ async def main():
     await engine.quit()
 
     with Timer("ACPL"):
-        acpl_list = await stats.get_acpl_list()
-        print("ACPL: ", acpl_list)
-        print("ACPL standard deviation: ", stats.acpl_standard_deviation)
-        print("Coefficient of variation: ", stats.coefficient_of_variation)
+        print("Coefficient of variation: ",await stats.coefficient_of_variation())
+
+    """with Timer("Opening detection: "):
+        for index, game in enumerate(test.Games):
+            print(
+                f"Game {index + 1} ({game.game.headers.get('ECO', '???')}): Opening ended on Move {game.transition_opening_to_mid}"
+            )
+            print(f"Opening acpl: {game.acpl_opening}")
+            print()"""
+    print("Opening coefficient of variation", stats.coefficient_of_variation_opening)
 
 
 if __name__ == "__main__":

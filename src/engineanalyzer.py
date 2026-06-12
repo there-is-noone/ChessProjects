@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-
 import chess.engine
 import chess
 from utils.moveanalysis import MoveAnalysis
@@ -32,6 +31,9 @@ class EngineAnalyzer:
 
     @staticmethod
     def _score_to_value(score: chess.engine.Score) -> float:
+        """Changes the engine score into a float taking into consideration
+        mate values"""
+
         if score.is_mate():
             value = 10000 if score.mate() > 0 else -10000
         else:
@@ -39,6 +41,7 @@ class EngineAnalyzer:
         return value
 
     async def get_eval(self, board: chess.Board) -> float:
+        """Gets an engine evaluation for a single move"""
 
         if self.strategy.time_limit:
             limit = chess.engine.Limit(time=self.strategy.time_limit)
@@ -62,6 +65,8 @@ class EngineAnalyzer:
         return score
 
     async def analyze_game(self, game: chess.pgn.Game) -> list[MoveAnalysis]:
+        """Gathers all of the evaluations for a single game"""
+
         board = game.board()
         result = []
         if game.eval():
@@ -88,7 +93,6 @@ class EngineAnalyzer:
                 raw_eval = await self.get_eval(board)
                 current_eval = raw_eval if board.turn == moving_color else -raw_eval
             loss = max(0.0, prev_eval - current_eval)
-
 
             result.append(
                 MoveAnalysis(move, loss, prev_eval, current_eval, moving_color)

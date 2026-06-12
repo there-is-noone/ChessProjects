@@ -26,12 +26,11 @@ class OpeningBook:
             return pickle.load(f)
 
     @classmethod
-    def build_trie(cls) -> OpeningBook:
+    def build_trie(cls):
         root = OpeningNode()
         epd_map = {}
         for x in "abcde":
             for opening in load_games(f"../openings/base/{x}.tsv"):
-                epd = opening.get("epd")
                 node = root
                 pgn_text = opening.get("pgn")
                 game = chess.pgn.read_game(StringIO(pgn_text))
