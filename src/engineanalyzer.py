@@ -69,35 +69,35 @@ class EngineAnalyzer:
 
         board = game.board()
         result = []
-        if game.eval():
-            prev_eval = self._score_to_value(game.eval().pov(board.turn))
-        else:
-            prev_eval = await self.get_eval(board)
+
+        prev_eval = await self.get_eval(board)
+
         node = game
 
         while not node.is_end():
             moving_color = board.turn
+
             node = node.variations[0]
             move = node.move
             board.push(move)
 
-            if node.eval():
-                score = node.eval().pov(moving_color)
-                current_eval = self._score_to_value(score)
-            elif (
-                abs(prev_eval) > self.strategy.evaluation_threshold
-                or board.ply() % self.strategy.eval_every_n_moves != 0
-            ):
-                current_eval = prev_eval
+            current_eval = await self.get_eval(board)
+
+            if moving_color == chess.WHITE:
+                loss = max(0.0, prev_eval - current_eval)
             else:
-                raw_eval = await self.get_eval(board)
-                current_eval = raw_eval if board.turn == moving_color else -raw_eval
-            loss = max(0.0, prev_eval - current_eval)
+                loss = max(0.0, current_eval - prev_eval)
 
             result.append(
-                MoveAnalysis(move, loss, prev_eval, current_eval, moving_color)
+                MoveAnalysis(
+                    move,
+                    loss,
+                    prev_eval,
+                    current_eval,
+                    moving_color,
+                )
             )
 
-            prev_eval = -current_eval
+            prev_eval = current_eval
 
         return result

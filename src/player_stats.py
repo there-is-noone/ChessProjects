@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from collections import defaultdict
 from player import Player
+from utils.Config import ConfigData
 import chess
 import chess.pgn
 import utils.math_stat as math_stats
@@ -23,12 +24,14 @@ class PlayerStats:
     _short_game_winrate: float | None = field(default=None)
 
     _acpl: list | None = field(default=None)
+    _acpl_standard_deviation: float | None = field(default=None)
+    _coefficient_of_variation: float | None = field(default=None)
 
     _acpl_opening_list: list | None = field(default=None)
     _coefficient_of_variation_opening: float | None = field(default=None)
 
-    _acpl_standard_deviation: float | None = field(default=None)
-    _coefficient_of_variation: float | None = field(default=None)
+    _acpl_endgame_list: list | None = field(default=None)
+    _coefficient_of_variation_endgame: float | None = field(default=None)
 
     _winrate_per_eco: dict | None = field(default=None)
 
@@ -77,7 +80,7 @@ class PlayerStats:
             counter_short = 0
             counter = 0
             for game in self.player.Games:
-                if game.how_many_moves() <= 25:
+                if game.how_many_moves() <= ConfigData.SHORT_GAME_THRESHOLD:
                     counter_short += 1
                 counter += 1
 
@@ -94,7 +97,7 @@ class PlayerStats:
             counter_short_wins = 0
             counter = 0
             for game, color in self.player._iterate_games():
-                if game.how_many_moves() <= 25:
+                if game.how_many_moves() <= ConfigData.SHORT_GAME_THRESHOLD:
                     if self.player.did_player_win(game, color) == 1.0:
                         counter_short_wins += 1
                     counter += 1
@@ -199,7 +202,6 @@ class PlayerStats:
 
         return float(numpy.std(values, ddof=1))
 
-
     def acpl_opening_stand_dev(self):
         return self.compute_acpl_standard_deviation(self.acpl_opening_list)
 
@@ -239,12 +241,24 @@ class PlayerStats:
         self._coefficient_of_variation = self.compute_coefficient_of_variation(acpl)
         return self._coefficient_of_variation
 
-
-
     @property
     def coefficient_of_variation_opening(self):
         """Calculate a coefficient of variation for game only in the opening"""
 
         return self.compute_coefficient_of_variation(self.acpl_opening_list)
 
+    @property
+    def acpl_endgame_list(self):
+        if self._acpl_endgame_list is None:
+            self._acpl_endgame_list = []
+            for game in self.player.Games:
+                self._acpl_endgame_list.append(game.acpl_endgame)
+        return self._acpl_endgame_list
 
+    @property
+    def coefficient_of_variation_endgame(self):
+        if not self._coefficient_of_variation_endgame:
+            self._coefficient_of_variation_endgame = (
+                self.compute_coefficient_of_variation(self.acpl_endgame_list)
+            )
+        return self._coefficient_of_variation_endgame

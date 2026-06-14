@@ -49,7 +49,10 @@ async def main():
                 analyzed._acpl_white = g.get("acpl_white")
                 analyzed._acpl_black = g.get("acpl_black")
                 analyzed._acpl_opening = g.get("acpl_opening")
-                analyzed._transition_opening_to_mid = g.get("transitin_ply")
+                analyzed._transition_opening_to_mid = g.get("early_mid_transition_ply")
+                analyzed._transition_mid_to_endgame = g.get(
+                    "mid_endgame_transition_ply"
+                )
                 test.add_game(analyzed)
 
                 if "losses" in g and "moves" in g:
@@ -108,16 +111,11 @@ async def main():
     await engine.quit()
 
     with Timer("ACPL"):
-        print("Coefficient of variation: ",await stats.coefficient_of_variation())
+        print("Coefficient of variation: ", await stats.coefficient_of_variation())
 
-    """with Timer("Opening detection: "):
-        for index, game in enumerate(test.Games):
-            print(
-                f"Game {index + 1} ({game.game.headers.get('ECO', '???')}): Opening ended on Move {game.transition_opening_to_mid}"
-            )
-            print(f"Opening acpl: {game.acpl_opening}")
-            print()"""
     print("Opening coefficient of variation", stats.coefficient_of_variation_opening)
+
+    print("Ending coefficient of variation: ", stats.coefficient_of_variation_endgame)
 
 
 if __name__ == "__main__":

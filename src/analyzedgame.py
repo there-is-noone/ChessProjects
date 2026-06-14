@@ -13,9 +13,10 @@ class AnalyzedGame:
     _acpl_white: float | None = field(default=None)
     _acpl_black: float | None = field(default=None)
     _acpl_opening: float | None = field(default=None)
-    _acpl_ending: float | None = field(default=None)
+    _acpl_endgame: float | None = field(default=None)
     _transition_opening_to_mid: int | None = field(default=None)
-    _transition_mid_to_endgame:int | None = field(default=None)
+    _transition_mid_to_endgame: int | None = field(default=None)
+
     def get_result(self) -> str:
         return self.game.headers["Result"]
 
@@ -158,10 +159,10 @@ class AnalyzedGame:
         return self._acpl_opening
 
     @property
-    def transition_mid_to_end(self):
+    def transition_mid_to_endgame(self):
         """Finds the move that is the assumed breakpoint between the opening and middlegame"""
 
-        if not self._transition_mid_to_end:
+        if not self._transition_mid_to_endgame:
             board = chess.Board()
             node = self.game
             while not node.is_end():
@@ -172,12 +173,13 @@ class AnalyzedGame:
                     self._transition_mid_to_endgame = board.ply()
                     break
 
-            if not self._transition_mid_to_endgame :
-                self._transition_opening_to_mid = board.ply()
-        return self._transition_opening_to_mid
+            if not self._transition_mid_to_endgame:
+                self._transition_mid_to_endgame = board.ply()
+        return self._transition_mid_to_endgame
+
     @property
-    def acpl_ending(self):
-        if self._acpl_opening is None:
+    def acpl_endgame(self):
+        if self._acpl_endgame is None:
             if not self._move_analysis:
                 return 0.0
 
@@ -185,7 +187,7 @@ class AnalyzedGame:
             current_ply = 0
 
             for m in self._move_analysis:
-                if current_ply >= self.transition_mid_to_end:
+                if current_ply >= self.transition_mid_to_endgame:
                     endgame_moves.append(m)
                 current_ply += 1
 
@@ -195,6 +197,10 @@ class AnalyzedGame:
                 self._acpl_endgame = math_stats.mean([m.loss for m in endgame_moves])
 
         return self._acpl_endgame
+
+    def blunder_list(self):
+        return [m for m in self._move_analysis if m.is_blunder]
+
 
 def serialize_game(analyzed: AnalyzedGame):
     """makes AnalyzedGame easier to pickle"""
@@ -209,4 +215,6 @@ def serialize_game(analyzed: AnalyzedGame):
         "acpl_opening": analyzed.acpl_opening,
         "acpl_white": analyzed._acpl_white,
         "acpl_black": analyzed._acpl_black,
+        "early_mid_transition_ply": analyzed.transition_opening_to_mid,
+        "mid_endgame_transition_ply": analyzed.transition_mid_to_endgame,
     }
