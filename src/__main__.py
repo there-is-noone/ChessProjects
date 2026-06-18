@@ -29,6 +29,8 @@ async def main():
     except FileNotFoundError:
         opening = openingbook.OpeningBook.build_trie()
         opening.save()
+    AnalyzedGame._opening_book = opening
+
     PICKLE_FILE = (
         f"analysis{ConfigData.PLAYER_NAME}{ConfigData.ENGINE_ANALYSIS_TYPE}.pkl"
     )
@@ -113,9 +115,24 @@ async def main():
     with Timer("ACPL"):
         print("Coefficient of variation: ", await stats.coefficient_of_variation())
 
-    print("Opening coefficient of variation", stats.coefficient_of_variation_opening)
+        print(
+            "Opening coefficient of variation", stats.coefficient_of_variation_opening
+        )
 
-    print("Ending coefficient of variation: ", stats.coefficient_of_variation_endgame)
+        print(
+            "Ending coefficient of variation: ", stats.coefficient_of_variation_endgame
+        )
+
+    with Timer("opening name check"):
+        for game in test.Games:
+            print(game.opening_name)
+
+    with Timer("Gambit Check"):
+        for nr, game in enumerate(test.Games[:1000]):
+            if game.is_gambit:
+                print(game.opening_name)
+                print(nr)
+                print()
 
 
 if __name__ == "__main__":

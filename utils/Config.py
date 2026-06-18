@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import os
+import chess
 
 
 @dataclass
@@ -14,3 +15,14 @@ class ConfigData:
     FILE_PATH = "/home/kkrec/chessgames/lichess_CoolChessSchool_2026-06-10.pgn"
     PLAYER_NAME = "CoolChessSchool"
     ENGINE_ANALYSIS_TYPE = "acpl_deep"
+    OPENING_BOOK_PATH="opening_book.pkl"
+
+    OPENING_GAMBIT_THRESHOLD = 100
+
+    PIECE_VALUES = {
+        chess.PAWN: 1,
+        chess.KNIGHT: 3,
+        chess.BISHOP: 3,
+        chess.ROOK: 5,
+        chess.QUEEN: 9,
+    }
