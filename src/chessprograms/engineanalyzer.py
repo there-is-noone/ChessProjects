@@ -1,12 +1,12 @@
+from collections import OrderedDict
 from dataclasses import dataclass, field
-import chess.engine
+
 import chess
-from utils.moveanalysis import MoveAnalysis
-from utils.EngineStrategies import EngineStrategies
 import chess.engine
 import chess.pgn
-from utils.Config import ConfigData
-from collections import OrderedDict
+from chessprograms.utils.Config import ConfigData
+from chessprograms.utils.EngineStrategies import EngineStrategies
+from chessprograms.utils.moveanalysis import MoveAnalysis
 
 
 @dataclass

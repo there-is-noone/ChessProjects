@@ -1,12 +1,13 @@
-from dataclasses import dataclass, field
+import asyncio
 from collections import defaultdict
-from player import Player
-from utils.Config import ConfigData
+from dataclasses import dataclass, field
+
 import chess
 import chess.pgn
-import utils.math_stat as math_stats
 import numpy
-import asyncio
+import chessprograms.utils.math_stat as math_stats
+from chessprograms.player import Player
+from chessprograms.utils.Config import ConfigData
 
 
 @dataclass
@@ -118,9 +119,7 @@ class PlayerStats:
                 if game.ends_in_endgame():
                     counter_endgame += 1
                 counter += 1
-            self._ending_rate = (
-                math_stats.percentage(counter_endgame, counter) if counter else 0
-            )
+            self._ending_rate = math_stats.percentage(counter_endgame, counter) if counter else 0
         return self._ending_rate
 
     @property
@@ -146,9 +145,7 @@ class PlayerStats:
         dependent on the opening chosen by the players"""
 
         if self._winrate_per_eco is None:
-            eco_data = defaultdict(
-                lambda: {"wins": 0, "draw": 0, "loss": 0, "total": 0}
-            )
+            eco_data = defaultdict(lambda: {"wins": 0, "draw": 0, "loss": 0, "total": 0})
             self._winrate_per_eco: dict[str, list[float]] = {}
             for game, color in self.player._iterate_games():
                 eco_code = game.game.headers.get("ECO", "unknown")
@@ -210,10 +207,7 @@ class PlayerStats:
 
         if self._acpl is None:
             self._acpl = []
-            tasks = [
-                game.get_acpl_for_color(color)
-                for game, color in self.player._iterate_games()
-            ]
+            tasks = [game.get_acpl_for_color(color) for game, color in self.player._iterate_games()]
 
             results = await asyncio.gather(*tasks)
 
@@ -258,7 +252,7 @@ class PlayerStats:
     @property
     def coefficient_of_variation_endgame(self):
         if not self._coefficient_of_variation_endgame:
-            self._coefficient_of_variation_endgame = (
-                self.compute_coefficient_of_variation(self.acpl_endgame_list)
+            self._coefficient_of_variation_endgame = self.compute_coefficient_of_variation(
+                self.acpl_endgame_list
             )
         return self._coefficient_of_variation_endgame

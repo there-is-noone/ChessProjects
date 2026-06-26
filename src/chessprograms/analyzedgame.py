@@ -1,18 +1,18 @@
 from dataclasses import dataclass, field
-import utils.math_stat as math_stats
-from engineanalyzer import EngineAnalyzer
-import chess.pgn
-from openings.openingbook import OpeningBook
-from utils.Config import ConfigData
-from utils.moveanalysis import MoveAnalysis
 
+import chess.pgn
+import chessprograms.utils.math_stat as math_stats
+from chessprograms.engineanalyzer import EngineAnalyzer
+from chessprograms.openings.openingbook import OpeningBook
+from chessprograms.utils.Config import ConfigData
+from chessprograms.utils.moveanalysis import MoveAnalysis
 
 
 @dataclass(repr=False)
 class AnalyzedGame:
     game: chess.pgn.Game
     analyzer: EngineAnalyzer
-    _opening_book : OpeningBook= field(init=False)
+    _opening_book: OpeningBook = field(init=False)
     _move_analysis: list[MoveAnalysis] = field(default_factory=list)
     _acpl_white: float | None = field(default=None)
     _acpl_black: float | None = field(default=None)
@@ -55,12 +55,8 @@ class AnalyzedGame:
 
         white_moves = [m for m in moves if m.color == chess.WHITE]
         black_moves = [m for m in moves if m.color == chess.BLACK]
-        self._acpl_white = (
-            math_stats.mean([m.loss for m in white_moves]) if white_moves else 0.0
-        )
-        self._acpl_black = (
-            math_stats.mean([m.loss for m in black_moves]) if black_moves else 0.0
-        )
+        self._acpl_white = math_stats.mean([m.loss for m in white_moves]) if white_moves else 0.0
+        self._acpl_black = math_stats.mean([m.loss for m in black_moves]) if black_moves else 0.0
 
     async def get_acpl_for_color(self, color: chess.Color) -> float | None:
         """Return cached per-color ACPL. Triggers precompute_acpl if not yet done."""
@@ -154,24 +150,7 @@ class AnalyzedGame:
 
     @property
     def opening_name(self) -> str | None:
-        board = chess.Board()
-        node = self._opening_book.trie
-
-        for move in self.game.mainline_moves():
-            if move not in board.legal_moves:
-                break
-            if move not in node.children:
-                break
-
-            board.push(move)
-            node = node.children[move]
-
-        epd = board.epd()
-
-        opening_entry = self._opening_book.epd_map.get(epd)
-        if opening_entry:
-            return opening_entry.get("name")
-        return None
+        return self._opening_book.get_opening_from_moves(self.game.mainline_moves())
 
     @property
     def acpl_opening(self):
@@ -207,9 +186,8 @@ class AnalyzedGame:
                 node = node.variations[0]
                 board.push(node.move)
 
-                if not self.is_endgame(board):
+                if self.is_endgame(board):
                     self._transition_mid_to_endgame = board.ply()
-                    break
 
             if not self._transition_mid_to_endgame:
                 self._transition_mid_to_endgame = board.ply()
@@ -242,23 +220,17 @@ class AnalyzedGame:
 
     @property
     def is_gambit(self):
-        try:
-            if "gambit" in self.opening_name.lower() or "countergambit" in self.opening_name.lower():
+        if self.opening_name:
+            if (
+                "gambit" in self.opening_name.lower()
+                or "countergambit" in self.opening_name.lower()
+            ):
                 return True
-        except:
-            pass
 
         board = chess.Board()
 
         for i, move in enumerate(self.opening_moves):
-            if move not in board.legal_moves:
-                """print("ILLEGAL MOVE DETECTED")
-                print("Move:", move)"""
-                print("Board:", board)
-                print("opening moves:", self.opening_moves)
-                break
-
-            copy_board = board
+            copy_board = board.copy()
             mover = board.turn
             did_capture = board.is_capture(move)
 
@@ -283,7 +255,7 @@ class AnalyzedGame:
                 after_capture_material = total_material(board)
                 loss = after_capture_material - before_material
 
-                if opponent_captures and loss <= -1:
+                if opponent_captures and loss < -1:
                     eval_after = self._move_analysis[i].eval_after
 
                     if mover == chess.BLACK:
@@ -291,20 +263,20 @@ class AnalyzedGame:
 
                     if eval_after > -ConfigData.OPENING_GAMBIT_THRESHOLD:
                         print("=== GAMBIT DETECTED ===")
-                        print("Move index:", i)
+                        """print("Move index:", i)
                         print("Move:", move)
                         print("Ply:", board.ply())
                         print("Material diff:", material_diff)
                         print("Eval after:", eval_after)
                         print("BOARD:")
                         print(copy_board)
-                        print()
+                        print()"""
 
                         print("Opening moves:")
                         print(" ".join(m.uci() for m in self.opening_moves[: i + 1]))
 
                         return True
-                board.pop()
+            board.pop()
         return False
 
 

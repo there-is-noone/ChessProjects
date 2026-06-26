@@ -2,17 +2,17 @@ import asyncio
 import os.path
 import pickle
 
-from utils.Config import ConfigData
-from utils.stopwatch import Timer
 import chess.engine
 import chess.pgn
-from engineanalyzer import EngineAnalyzer
-from player import Player
-from utils.moveanalysis import MoveAnalysis
-from analyzedgame import AnalyzedGame, serialize_game
-from utils.EngineStrategies import STRATEGIES
-from player_stats import PlayerStats
-import openings.openingbook as openingbook
+from chessprograms.openings import openingbook
+from chessprograms.analyzedgame import AnalyzedGame, serialize_game
+from chessprograms.engineanalyzer import EngineAnalyzer
+from chessprograms.player import Player
+from chessprograms.player_stats import PlayerStats
+from chessprograms.utils.Config import ConfigData
+from chessprograms.utils.EngineStrategies import STRATEGIES
+from chessprograms.utils.moveanalysis import MoveAnalysis
+from chessprograms.utils.stopwatch import Timer
 
 
 async def main():
@@ -31,9 +31,7 @@ async def main():
         opening.save()
     AnalyzedGame._opening_book = opening
 
-    PICKLE_FILE = (
-        f"analysis{ConfigData.PLAYER_NAME}{ConfigData.ENGINE_ANALYSIS_TYPE}.pkl"
-    )
+    PICKLE_FILE = f"analysis{ConfigData.PLAYER_NAME}{ConfigData.ENGINE_ANALYSIS_TYPE}.pkl"
 
     if os.path.exists(PICKLE_FILE):
         with Timer("reading from file:"):
@@ -52,9 +50,7 @@ async def main():
                 analyzed._acpl_black = g.get("acpl_black")
                 analyzed._acpl_opening = g.get("acpl_opening")
                 analyzed._transition_opening_to_mid = g.get("early_mid_transition_ply")
-                analyzed._transition_mid_to_endgame = g.get(
-                    "mid_endgame_transition_ply"
-                )
+                analyzed._transition_mid_to_endgame = g.get("mid_endgame_transition_ply")
                 test.add_game(analyzed)
 
                 if "losses" in g and "moves" in g:
@@ -115,24 +111,21 @@ async def main():
     with Timer("ACPL"):
         print("Coefficient of variation: ", await stats.coefficient_of_variation())
 
-        print(
-            "Opening coefficient of variation", stats.coefficient_of_variation_opening
-        )
+        print("Opening coefficient of variation", stats.coefficient_of_variation_opening)
 
-        print(
-            "Ending coefficient of variation: ", stats.coefficient_of_variation_endgame
-        )
+        print("Ending coefficient of variation: ", stats.coefficient_of_variation_endgame)
 
     with Timer("opening name check"):
         for game in test.Games:
             print(game.opening_name)
 
-    with Timer("Gambit Check"):
+
+"""    with Timer("Gambit Check"):
         for nr, game in enumerate(test.Games[:1000]):
             if game.is_gambit:
                 print(game.opening_name)
                 print(nr)
-                print()
+                print()"""
 
 
 if __name__ == "__main__":

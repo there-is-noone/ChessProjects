@@ -3,8 +3,7 @@
 import io
 import re
 import sys
-
-from typing import Dict, List, TextIO
+from typing import TextIO
 
 try:
     import chess
@@ -50,8 +49,8 @@ class Reporter:
 def main(
     f: TextIO,
     reporter: Reporter,
-    by_epd: Dict[str, List[str]],
-    shortest_by_name: Dict[str, int],
+    by_epd: dict[str, list[str]],
+    shortest_by_name: dict[str, int],
 ) -> None:
     prev_eco = ""
     prev_name = ""
@@ -87,9 +86,7 @@ def main(
             continue
 
         try:
-            board = chess.pgn.read_game(
-                io.StringIO(pgn), Visitor=chess.pgn.BoardBuilder
-            )
+            board = chess.pgn.read_game(io.StringIO(pgn), Visitor=chess.pgn.BoardBuilder)
         except ValueError as err:
             reporter.error(lno, f"{err}")
             continue
@@ -160,8 +157,8 @@ if __name__ == "__main__":
     print("eco", "name", "pgn", "uci", "epd", sep="\t")
 
     stats = Stats()
-    by_epd: Dict[str, List[str]] = {}
-    shortest_by_name: Dict[str, int] = {}
+    by_epd: dict[str, list[str]] = {}
+    shortest_by_name: dict[str, int] = {}
     for file_name in sys.argv[1:]:
         with open(file_name) as f:
             main(f, Reporter(stats, file_name), by_epd, shortest_by_name)

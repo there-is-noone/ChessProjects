@@ -1,10 +1,12 @@
-from dataclasses import dataclass, field
 import csv
 import pickle
+from collections.abc import Iterable
+from dataclasses import dataclass, field
 from io import StringIO
-from typing import Iterable
-from utils.Config import ConfigData
+from pathlib import Path
+
 import chess.pgn
+from chessprograms.utils.Config import ConfigData
 
 
 @dataclass
@@ -17,7 +19,6 @@ class OpeningNode:
 class OpeningBook:
     trie: OpeningNode
     epd_map: dict
-
 
     def save(self, path=ConfigData.OPENING_BOOK_PATH):
         with open(path, "wb") as f:
@@ -32,8 +33,10 @@ class OpeningBook:
     def build_trie(cls):
         root = OpeningNode()
         epd_map = {}
+        BASE_DIR = Path(__file__).resolve().parent
         for x in "abcde":
-            for opening in load_games(f"../openings/base/{x}.tsv"):
+            path = BASE_DIR / "base" / f"{x}.tsv"
+            for opening in load_games(path):
                 pgn_text = opening.get("pgn")
                 game = chess.pgn.read_game(StringIO(pgn_text))
                 if game is None:
@@ -47,10 +50,11 @@ class OpeningBook:
                 epd_map[board.epd()] = opening
         return cls(root, epd_map)
 
-
     def get_opening_from_position(self, board: chess.Board) -> str | None:
         """O(1) lookup by board position. Best when you already have a board."""
-        entry = self.epd_map.get(board.epd())  # epd() strips move counters — more reliable than fen()
+        entry = self.epd_map.get(
+            board.epd()
+        )  # epd() strips move counters — more reliable than fen()
         return entry.get("name") if entry else None
 
     def get_opening_from_moves(self, moves: Iterable[chess.Move]) -> str | None:
@@ -65,11 +69,13 @@ class OpeningBook:
                 last_named = node.opening
         return last_named or None
 
+
 def load_games(path):
     with open(path, encoding="utf-8") as f:
         reader = csv.DictReader(f, delimiter="\t")
-        for row in reader:
-            yield row
+        yield from reader
 
-games=OpeningBook.build_trie()
-games.save()
+
+if __name__ == "__main__":
+    games = OpeningBook.build_trie()
+    games.save()

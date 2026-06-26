@@ -1,6 +1,7 @@
 from dataclasses import dataclass
+
 import chess
-from utils.Config import ConfigData
+from chessprograms.utils.Config import ConfigData
 
 
 @dataclass

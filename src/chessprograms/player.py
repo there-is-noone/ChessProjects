@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 
 import chess
-from analyzedgame import AnalyzedGame
+from chessprograms.analyzedgame import AnalyzedGame
 
 
 @dataclass
