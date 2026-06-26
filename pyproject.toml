@@ -1,0 +1,49 @@
+[project]
+name = "chessprograms"
+version = "0.1.0"
+description = "Chess game analysis and processing toolkit"
+authors = [
+    { name = "Your Name" }
+]
+readme = "README.md"
+requires-python = ">=3.10"
+
+dependencies = [
+    "python-chess>=1.999",
+    "numpy>=1.26"
+]
+
+# CLI entry point
+[project.scripts]
+chessprograms = "chessprograms.main:main"
+
+# 🔧 Build system (standard, no drama)
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+
+# 📦 Tell Python where your package lives
+[tool.hatch.build.targets.wheel]
+packages = ["src/chessprograms"]
+
+
+# ⚡ uv settings (minimal, uv handles most things automatically)
+[tool.uv]
+dev-dependencies = [
+    "ruff>=0.5.0"
+]
+
+
+# 🧹 Ruff (you already had it — this is a solid baseline)
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
