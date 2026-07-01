@@ -31,12 +31,13 @@ async def main():
         opening.save()
     AnalyzedGame._opening_book = opening
 
-    PICKLE_FILE = f"analysis{ConfigData.PLAYER_NAME}{ConfigData.ENGINE_ANALYSIS_TYPE}.pkl"
+    PICKLE_FILE = f"data/analysis{ConfigData.PLAYER_NAME}{ConfigData.ENGINE_ANALYSIS_TYPE}.pkl"
 
     if os.path.exists(PICKLE_FILE):
-        with Timer("reading from file:"):
+        with Timer("pickle read"):
             with open(PICKLE_FILE, "rb") as f:
                 all_games_data = pickle.load(f)
+        with Timer("decoding"):
             for g in all_games_data:
                 game = chess.pgn.Game()
                 for key, value in g["headers"].items():
@@ -53,7 +54,11 @@ async def main():
                 analyzed._transition_mid_to_endgame = g.get("mid_endgame_transition_ply")
                 test.add_game(analyzed)
 
+
                 if "losses" in g and "moves" in g:
+                    development = g.get("development")
+                    if development is None:
+                        development = [0.0] * len(g["moves"])
                     analyzed._move_analysis = [
                         MoveAnalysis(
                             move=chess.Move.from_uci(m_uci),
@@ -61,9 +66,11 @@ async def main():
                             eval_before=0.0,
                             eval_after=eval_val,
                             color=chess.WHITE if idx % 2 == 0 else chess.BLACK,
+                            development_advantage=dev_adv
                         )
-                        for idx, (m_uci, loss_val, eval_val) in enumerate(
-                            zip(g["moves"], g["losses"], g["evals"])
+
+                        for idx, (m_uci, loss_val, eval_val,dev_adv) in enumerate(
+                            zip(g["moves"], g["losses"], g["evals"], development)
                         )
                     ]
     else:
@@ -84,31 +91,31 @@ async def main():
                     await analyzed.precompute_acpl()
                 nr += 1
                 all_games_data.append(serialize_game(analyzed))
+        with Timer("pickling the games"):
+            with open(PICKLE_FILE, "wb") as f:
+                pickle.dump(all_games_data, f)
 
-        with open(PICKLE_FILE, "wb") as f:
-            pickle.dump(all_games_data, f)
+                for g in all_games_data:
+                    game = chess.pgn.Game()
+                    for key, value in g["headers"].items():
+                        game.headers[key] = value
 
-            for g in all_games_data:
-                game = chess.pgn.Game()
-                for key, value in g["headers"].items():
-                    game.headers[key] = value
+                    analyzed = AnalyzedGame(game, analyzer)
 
-                analyzed = AnalyzedGame(game, analyzer)
+                    analyzed._acpl_white = g.get("acpl_white")
+                    analyzed._acpl_black = g.get("acpl_black")
 
-                analyzed._acpl_white = g.get("acpl_white")
-                analyzed._acpl_black = g.get("acpl_black")
-
-                test.add_game(analyzed)
-
-    print("Winrate:", stats.winrate, "%")
-    print("Short game rate:", stats.short_game_rate, "%")
-    print("Short game winrate:", stats.short_game_win_rate, "%")
-    print("Endgame rate:", stats.endgame_rate, "%")
-    print("Endgame win rate:", stats.endgame_win_rate, "%")
-    print("Winrate_per_eco: ", stats.winrate_per_eco, "%")
+                    test.add_game(analyzed)
+    with Timer("basic stats"):
+        print("Winrate:", stats.winrate, "%")
+        print("Short game rate:", stats.short_game_rate, "%")
+        print("Short game winrate:", stats.short_game_win_rate, "%")
+        print("Endgame rate:", stats.endgame_rate, "%")
+        print("Endgame win rate:", stats.endgame_win_rate, "%")
+    #print("Winrate_per_eco: ", stats.winrate_per_eco, "%")
     await engine.quit()
 
-    with Timer("ACPL"):
+    with Timer("stats based on acpl"):
         print("Coefficient of variation: ", await stats.coefficient_of_variation())
 
         print("Opening coefficient of variation", stats.coefficient_of_variation_opening)
@@ -119,6 +126,21 @@ async def main():
         for game in test.Games:
             print(game.opening_name)
 
+
+    with Timer("development check"):
+        for i,game in enumerate(test.Games):
+            if game.which_color_developed_faster()==chess.WHITE:
+                print("White was faster")
+                print(game.transition_opening_to_mid)
+                print(i)
+                print()
+            elif game.which_color_developed_faster()==chess.BLACK:
+                print("Black was faster")
+                print(game.transition_opening_to_mid)
+                print(i)
+                print()
+
+        print(stats.development_advantage_percentage())
 
 """    with Timer("Gambit Check"):
         for nr, game in enumerate(test.Games[:1000]):

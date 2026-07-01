@@ -7,7 +7,7 @@ import chess.pgn
 from chessprograms.utils.Config import ConfigData
 from chessprograms.utils.EngineStrategies import EngineStrategies
 from chessprograms.utils.moveanalysis import MoveAnalysis
-
+import chessprograms.enums as enums
 
 @dataclass
 class EngineAnalyzer:
@@ -69,6 +69,26 @@ class EngineAnalyzer:
 
         board = game.board()
         result = []
+        development = {
+            chess.WHITE: {
+                "developed": set(),
+                "castled": False,
+                "queen_moved": False,
+                "early_queen":False,
+                "center_pawns": set(),
+                "lost_tempos": 0,
+                "rook_moves" : 0
+            },
+            chess.BLACK: {
+                "developed": set(),
+                "castled": False,
+                "queen_moved": False,
+                "early_queen":False,
+                "center_pawns": set(),
+                "lost_tempos" : 0,
+                "rook_moves": 0
+            },
+        }
 
         prev_eval = await self.get_eval(board)
 
@@ -79,6 +99,47 @@ class EngineAnalyzer:
 
             node = node.variations[0]
             move = node.move
+            piece = board.piece_at(move.from_square)
+            color = piece.color
+            match piece.piece_type:
+                case chess.BISHOP | chess.KNIGHT:
+                    start_piece = enums.STARTING_PIECES[color].get(move.from_square)
+
+                    if (
+                            start_piece
+                            and start_piece not in development[color]["developed"]
+                    ):
+                        development[color]["developed"].add(start_piece)
+                    elif start_piece in development[color]["developed"]:
+                        development[color]["lost_tempos"]+=1
+                case chess.QUEEN:
+                    if (
+                            not development[color]["queen_moved"]
+                            and len(development[color]["developed"]) < 4
+                    ):
+                        development[color]["early_queen"] = True
+
+                    development[color]["queen_moved"] = True
+
+
+
+                case chess.PAWN:
+                    if move.from_square in (
+                            chess.D2,
+                            chess.E2,
+                            chess.D7,
+                            chess.E7,
+                    ):
+                        development[color]["center_pawns"].add(move.from_square)
+                case chess.ROOK:
+                    if not development[color]["castled"]:
+                        development[color]["rook_moves"]+=1
+
+
+            if board.is_castling(move):
+                development[color]["castled"] = True
+
+
             board.push(move)
 
             current_eval = await self.get_eval(board)
@@ -88,6 +149,7 @@ class EngineAnalyzer:
             else:
                 loss = max(0.0, current_eval - prev_eval)
 
+            development_adv=self.development_score(development[chess.WHITE])-self.development_score(development[chess.BLACK])
             result.append(
                 MoveAnalysis(
                     move,
@@ -95,9 +157,28 @@ class EngineAnalyzer:
                     prev_eval,
                     current_eval,
                     moving_color,
+                    development_adv
                 )
             )
 
             prev_eval = current_eval
 
         return result
+
+    @staticmethod
+    def development_score(dev):
+        score = 0.0
+
+        score += len(dev["developed"])
+        score -= dev["lost_tempos"]*0.5
+        score += len(dev["center_pawns"])*0.5
+        score -= dev["rook_moves"]
+
+        if dev["castled"]:
+            score += 2
+
+        if dev["early_queen"] and len(dev["developed"]) < 4:
+            score -= 1
+
+
+        return score

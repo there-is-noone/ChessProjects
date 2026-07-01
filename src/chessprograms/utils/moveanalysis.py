@@ -11,6 +11,7 @@ class MoveAnalysis:
     eval_before: float
     eval_after: float
     color: chess.Color
+    development_advantage: float
 
     @property
     def is_blunder(self) -> bool:

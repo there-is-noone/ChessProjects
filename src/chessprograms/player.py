@@ -11,7 +11,7 @@ class Player:
     GamesBlack: list[AnalyzedGame] = field(default_factory=list)
     Games: list[AnalyzedGame] = field(default_factory=list)
 
-    def _iterate_games(self):
+    def iterate_games(self):
         for game in self.GamesWhite:
             yield game, True
         for game in self.GamesBlack:
@@ -34,17 +34,28 @@ class Player:
             result += f"{blackgame.game.headers['White']} vs {blackgame.game.headers['Black']}:{blackgame.get_result()}\n"
         return result
 
-    @staticmethod
-    def did_player_win(game: AnalyzedGame, color: chess.Color) -> float:
+
+    def which_color_is_player(self,game: AnalyzedGame):
+        if game in self.GamesWhite:
+            return chess.WHITE
+        elif game in self.GamesBlack:
+            return chess.BLACK
+        else:
+            return None
+
+
+    def did_player_win(self,game: AnalyzedGame) -> float:
         """Checks if the player that we're searching for won or lost
         returns:
         1.0 if won
         0.0 if lost
         0.5 for a draw"""
 
+        color=self.which_color_is_player(game)
+
         if game.get_result() == "1-0":
-            return 1.0 if color else 0.0
+            return 1.0 if color==chess.WHITE else 0.0
         elif game.get_result() == "0-1":
-            return 0.0 if color else 1.0
+            return 0.0 if color==chess.WHITE else 1.0
         else:
             return 0.5

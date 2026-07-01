@@ -218,7 +218,18 @@ class AnalyzedGame:
     def blunder_list(self):
         return [m for m in self._move_analysis if m.is_blunder]
 
-    @property
+    def which_color_developed_faster(self):
+        move=self.transition_opening_to_mid-2
+        development_advantage_at_move= self._move_analysis[move].development_advantage
+        if development_advantage_at_move>ConfigData.DEVELOPMENT_DIFFERENCE:
+            return chess.WHITE
+        elif development_advantage_at_move<-ConfigData.DEVELOPMENT_DIFFERENCE:
+            return chess.BLACK
+        else:
+            return None
+
+   #function discontinued, will try to find better heuristics cuz those suck
+    """@property
     def is_gambit(self):
         if self.opening_name:
             if (
@@ -263,21 +274,21 @@ class AnalyzedGame:
 
                     if eval_after > -ConfigData.OPENING_GAMBIT_THRESHOLD:
                         print("=== GAMBIT DETECTED ===")
-                        """print("Move index:", i)
+                        print("Move index:", i)
                         print("Move:", move)
                         print("Ply:", board.ply())
                         print("Material diff:", material_diff)
                         print("Eval after:", eval_after)
                         print("BOARD:")
                         print(copy_board)
-                        print()"""
+                        print()
 
                         print("Opening moves:")
                         print(" ".join(m.uci() for m in self.opening_moves[: i + 1]))
 
                         return True
             board.pop()
-        return False
+        return False"""
 
 
 def serialize_game(analyzed: AnalyzedGame):
@@ -290,6 +301,7 @@ def serialize_game(analyzed: AnalyzedGame):
         "moves": [m.move.uci() for m in analysis],
         "evals": [m.eval_after for m in analysis],
         "losses": [m.loss for m in analysis],
+        "development": [m.development_advantage for m in analysis],
         "acpl_opening": analyzed.acpl_opening,
         "acpl_white": analyzed._acpl_white,
         "acpl_black": analyzed._acpl_black,
