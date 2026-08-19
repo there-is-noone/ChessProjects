@@ -1,11 +1,14 @@
 from dataclasses import dataclass, field
 
 import chess.pgn
+import numpy as np
 import chessprograms.utils.math_stat as math_stats
 from chessprograms.engineanalyzer import EngineAnalyzer
 from chessprograms.openings.openingbook import OpeningBook
+from chessprograms.utils import moveanalysis
 from chessprograms.utils.Config import ConfigData
 from chessprograms.utils.moveanalysis import MoveAnalysis
+import enums
 
 
 @dataclass(repr=False)
@@ -13,13 +16,12 @@ class AnalyzedGame:
     game: chess.pgn.Game
     analyzer: EngineAnalyzer
     _opening_book: OpeningBook = field(init=False)
-    _move_analysis: list[MoveAnalysis] = field(default_factory=list)
+    _move_analysis: list[MoveAnalysis] = field(default=None)
     _acpl_white: float | None = field(default=None)
     _acpl_black: float | None = field(default=None)
     _acpl_opening: float | None = field(default=None)
     _acpl_endgame: float | None = field(default=None)
-    _transition_opening_to_mid: int | None = field(default=None)
-    _transition_mid_to_endgame: int | None = field(default=None)
+    _acpl_midgame: float | None = field(default=None)
 
     def get_result(self) -> str:
         return self.game.headers["Result"]
@@ -121,19 +123,14 @@ class AnalyzedGame:
     def transition_opening_to_mid(self):
         """Finds the move that is the assumed breakpoint between the opening and middlegame"""
 
-        if self._transition_opening_to_mid is None:
-            board = chess.Board()
+        board = chess.Board()
+        for move in self.game.mainline_moves():
+            board.push(move)
 
-            for move in self.game.mainline_moves():
-                board.push(move)
+            if not self.is_opening(board):
+                return board.ply()
 
-                if not self.is_opening(board):
-                    self._transition_opening_to_mid = board.ply()
-                    break
-
-            if self._transition_opening_to_mid is None:
-                self._transition_opening_to_mid = board.ply()
-        return self._transition_opening_to_mid
+        return board.ply()
 
     @property
     def opening_moves(self) -> list[chess.Move]:
@@ -179,19 +176,33 @@ class AnalyzedGame:
     def transition_mid_to_endgame(self):
         """Finds the move that is the assumed breakpoint between the opening and middlegame"""
 
-        if not self._transition_mid_to_endgame:
-            board = chess.Board()
-            node = self.game
-            while not node.is_end():
-                node = node.variations[0]
-                board.push(node.move)
+        board = chess.Board()
+        node = self.game
+        while not node.is_end():
+            node = node.variations[0]
+            board.push(node.move)
 
-                if self.is_endgame(board):
-                    self._transition_mid_to_endgame = board.ply()
+            if self.is_endgame(board):
+                return board.ply()
+        return board.ply()
 
-            if not self._transition_mid_to_endgame:
-                self._transition_mid_to_endgame = board.ply()
-        return self._transition_mid_to_endgame
+    @property
+    def acpl_midgame(self):
+        if self._acpl_midgame is None:
+            if not self._move_analysis:
+                return 0.0
+
+            midgame_moves = []
+
+            for move in range(self.transition_opening_to_mid, self.transition_mid_to_endgame):
+                midgame_moves.append(self._move_analysis[move])
+
+            if not midgame_moves:
+                self._acpl_midgame = 0.0
+            else:
+                self._acpl_midgame = math_stats.mean([m.loss for m in midgame_moves])
+
+        return self._acpl_midgame
 
     @property
     def acpl_endgame(self):
@@ -200,12 +211,9 @@ class AnalyzedGame:
                 return 0.0
 
             endgame_moves = []
-            current_ply = 0
 
-            for m in self._move_analysis:
-                if current_ply >= self.transition_mid_to_endgame:
-                    endgame_moves.append(m)
-                current_ply += 1
+            for move in range(self.transition_mid_to_endgame, len(self._move_analysis)):
+                endgame_moves.append(self._move_analysis[move])
 
             if not endgame_moves:
                 self._acpl_endgame = 0.0
@@ -216,19 +224,94 @@ class AnalyzedGame:
 
     @property
     def blunder_list(self):
-        return [m for m in self._move_analysis if m.is_blunder]
+        return [m for m in self._move_analysis if m.severity != moveanalysis.BlunderSeverity.NONE]
 
     def which_color_developed_faster(self):
-        move=self.transition_opening_to_mid-2
-        development_advantage_at_move= self._move_analysis[move].development_advantage
-        if development_advantage_at_move>ConfigData.DEVELOPMENT_DIFFERENCE:
+        move = self.transition_opening_to_mid - 2
+        try:
+            development_advantage_at_move = self._move_analysis[move].development_advantage
+        except IndexError and TypeError:
+            print("this game is a mistaken one")
+            print(self._move_analysis)
+            return None
+        if development_advantage_at_move > ConfigData.DEVELOPMENT_DIFFERENCE:
             return chess.WHITE
-        elif development_advantage_at_move<-ConfigData.DEVELOPMENT_DIFFERENCE:
+        elif development_advantage_at_move < -ConfigData.DEVELOPMENT_DIFFERENCE:
             return chess.BLACK
         else:
             return None
 
-   #function discontinued, will try to find better heuristics cuz those suck
+    def which_color_attacked(self):
+        if self.transition_opening_to_mid is None:
+            return None
+
+        if self._move_analysis is None:
+            return None
+        move = min(self.game.end().ply(), self.transition_opening_to_mid + 1)
+
+        if move < 2:
+            return self._move_analysis[0].color
+
+        prev = self._move_analysis[move - 2]
+        curr = self._move_analysis[move - 1]
+
+        if curr.pieces_offensive > prev.pieces_offensive:
+            return curr.color
+        elif curr.pieces_offensive < prev.pieces_offensive:
+            return prev.color
+        else:
+            return None
+
+    def volatilities(self, color):
+        volatilities = []
+        node = self.game
+        for move in self._move_analysis:
+            if move.color == color:
+                volatilities.append(move.volatility)
+        return volatilities
+
+    """@property
+    def has_a_sacrifice(self):
+        for move in self._move_analysis:
+            if move.is_sacrifice:
+                return True
+        return False"""
+
+    @property
+    def forcing_moves(self):
+        board = chess.Board()
+        node = self.game
+        counter = 0
+        counter_forcing = 0
+        while not node.is_end():
+            node = node.variations[0]
+            if board.gives_check(node.move) or board.is_capture(node.move):
+                counter_forcing += 1
+            board.push(node.move)
+
+            counter += 1
+        return counter, counter_forcing
+
+    @property
+    def mobile_moves(self):
+        counter = 0
+        counter_mobile = 0
+        for move in self._move_analysis:
+            if move.is_mobile:
+                counter_mobile += 1
+            counter += 1
+        return counter, counter_mobile
+
+    @property
+    def pressure_gains_accumulation(self):
+        accumulator = 0
+        moves = 0
+        for move in self._move_analysis:
+            accumulator += move.pressure_gain
+            moves += 1
+        return moves, accumulator
+
+    # function discontinued, will try to find better heuristics cuz those suck
     """@property
     def is_gambit(self):
         if self.opening_name:
@@ -299,7 +382,8 @@ def serialize_game(analyzed: AnalyzedGame):
     return {
         "headers": dict(analyzed.game.headers),
         "moves": [m.move.uci() for m in analysis],
-        "evals": [m.eval_after for m in analysis],
+        "evals_before": [m.eval_before for m in analysis],
+        "evals_after": [m.eval_after for m in analysis],
         "losses": [m.loss for m in analysis],
         "development": [m.development_advantage for m in analysis],
         "acpl_opening": analyzed.acpl_opening,
@@ -307,14 +391,54 @@ def serialize_game(analyzed: AnalyzedGame):
         "acpl_black": analyzed._acpl_black,
         "early_mid_transition_ply": analyzed.transition_opening_to_mid,
         "mid_endgame_transition_ply": analyzed.transition_mid_to_endgame,
+        "is_sacrifices": [m.is_sacrifice for m in analysis],
+        "is_mobile": [m.is_mobile for m in analysis],
+        "development_gains": [m.pressure_gain for m in analysis],
     }
 
 
-def total_material(board: chess.Board) -> int:
+def total_material(board: chess.Board, color: chess.Color | None = None) -> int:
     total = 0
 
-    for piece_type, value in ConfigData.PIECE_VALUES.items():
-        total += len(board.pieces(piece_type, chess.WHITE)) * value
-        total += len(board.pieces(piece_type, chess.BLACK)) * value
+    colors = [color] if color is not None else [chess.WHITE, chess.BLACK]
+
+    for piece_color in colors:
+        for piece_type, value in ConfigData.PIECE_VALUES.items():
+            total += len(board.pieces(piece_type, piece_color)) * value
 
     return total
+
+
+def material_diff(board: chess.Board, color: chess.Color) -> int:
+    """Net material for `color` minus their opponent's."""
+    return total_material(board, color) - total_material(board, not color)
+
+
+def mobility(board: chess.Board, color: chess.Color):
+    attacked = chess.SquareSet()
+
+    for square, piece in board.piece_map().items():
+        if piece.color == color:
+            attacked |= board.attacks(square)
+
+    return len(attacked)
+
+
+def king_pressure(board: chess.Board, attacker: chess.Color) -> int:
+    enemy = not attacker
+    king_square = board.king(enemy)
+
+    if king_square is None:
+        print("no king")
+        return 0
+
+    pressure = 0
+
+    king_zone = chess.SquareSet(chess.BB_KING_ATTACKS[king_square])
+
+    for square in king_zone:
+        for attacker_square in board.attackers(attacker, square):
+            piece = board.piece_at(attacker_square)
+            pressure += enums.PIECE_ATTACK_WEIGHTS[piece.piece_type]
+
+    return pressure

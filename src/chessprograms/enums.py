@@ -1,5 +1,7 @@
 from enum import Enum
+
 import chess
+
 
 class Color(Enum):
     WHITE = 1
@@ -14,6 +16,7 @@ class Ending(Enum):
     DRAW = -2
     THREEFOLD = -3
     FIFTYMOVE = -4
+
 
 WHITE_START = {
     chess.B1,
@@ -49,4 +52,14 @@ STARTING_PIECES = {
         chess.C8: "BQ",
         chess.F8: "BK",
     },
+}
+
+
+PIECE_ATTACK_WEIGHTS = {
+    chess.PAWN: 1,
+    chess.KNIGHT: 2,
+    chess.BISHOP: 2,
+    chess.ROOK: 3,
+    chess.QUEEN: 4,
+    chess.KING: 0,
 }

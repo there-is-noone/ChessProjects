@@ -3,8 +3,8 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 
 import chess
-import chess.pgn
-import numpy
+import numpy as np
+
 import chessprograms.utils.math_stat as math_stats
 from chessprograms.player import Player
 from chessprograms.utils.Config import ConfigData
@@ -14,6 +14,7 @@ from chessprograms.utils.Config import ConfigData
 class PlayerStats:
     player: Player
     _winrate: float | None = field(default=None)
+    _score : float |None = field(default= None)
 
     _winrate_white: float | None = field(default=None)
     _winrate_black: float | None = field(default=None)
@@ -31,11 +32,24 @@ class PlayerStats:
     _acpl_opening_list: list | None = field(default=None)
     _coefficient_of_variation_opening: float | None = field(default=None)
 
+    _acpl_midgame_list: list | None = field(default=None)
+    _coefficient_of_variation_midgame: float | None = field(default=None)
+
     _acpl_endgame_list: list | None = field(default=None)
     _coefficient_of_variation_endgame: float | None = field(default=None)
 
     _winrate_per_eco: dict | None = field(default=None)
 
+    _volatilities_variances: list | None = field(default=None)
+
+    @property
+    def score(self) ->float | int:
+        if not self._score:
+            score=0
+            for game in self.player.iterate_games():
+                score+=self.player.did_player_win(game)
+            self._score = score
+        return self._score
     @property
     def winrate_white(self) -> float:
         """Returns the winrate only for the games played with white"""
@@ -43,9 +57,10 @@ class PlayerStats:
         if self._winrate_white is None:
             result = 0
             count = 0
-            for whitegame in self.player.GamesWhite:
-                result += self.player.did_player_win(whitegame)
-                count += 1
+            for game in self.player.iterate_games():
+                if self.player.which_color_is_player(game) == chess.WHITE:
+                    result += self.player.did_player_win(game) == 1.0
+                    count += 1
             self._winrate_white = math_stats.percentage(result, count) if count else 0
         return self._winrate_white
 
@@ -56,9 +71,10 @@ class PlayerStats:
         if self._winrate_black is None:
             result = 0
             count = 0
-            for blackgame in self.player.GamesBlack:
-                result += self.player.did_player_win(blackgame)
-                count += 1
+            for game in self.player.iterate_games():
+                if self.player.which_color_is_player(game) == chess.BLACK:
+                    result += self.player.did_player_win(game) == 1.0
+                    count += 1
             self._winrate_black = math_stats.percentage(result, count) if count else 0
         return self._winrate_black
 
@@ -68,7 +84,7 @@ class PlayerStats:
             count = 0
             total = 0
 
-            for game, color in self.player.iterate_games():
+            for game in self.player.iterate_games():
                 total += self.player.did_player_win(game) == 1.0
                 count += 1
             self._winrate = math_stats.percentage(total, count) if count else 0
@@ -80,7 +96,7 @@ class PlayerStats:
         if self._short_game_likeness is None:
             counter_short = 0
             counter = 0
-            for game in self.player.Games:
+            for game in self.player.iterate_games():
                 if game.how_many_moves() <= ConfigData.SHORT_GAME_THRESHOLD:
                     counter_short += 1
                 counter += 1
@@ -97,7 +113,7 @@ class PlayerStats:
         if self._short_game_winrate is None:
             counter_short_wins = 0
             counter = 0
-            for game, color in self.player.iterate_games():
+            for game in self.player.iterate_games():
                 if game.how_many_moves() <= ConfigData.SHORT_GAME_THRESHOLD:
                     if self.player.did_player_win(game) == 1.0:
                         counter_short_wins += 1
@@ -115,7 +131,7 @@ class PlayerStats:
         if self._ending_rate is None:
             counter_endgame = 0
             counter = 0
-            for game in self.player.Games:
+            for game in self.player.iterate_games():
                 if game.ends_in_endgame():
                     counter_endgame += 1
                 counter += 1
@@ -129,7 +145,7 @@ class PlayerStats:
         if self._ending_winrate is None:
             counter = 0
             counter_endgame_wins = 0
-            for game, color in self.player.iterate_games():
+            for game in self.player.iterate_games():
                 if game.ends_in_endgame():
                     if self.player.did_player_win(game) == 1.0:
                         counter_endgame_wins += 1
@@ -147,7 +163,7 @@ class PlayerStats:
         if self._winrate_per_eco is None:
             eco_data = defaultdict(lambda: {"wins": 0, "draw": 0, "loss": 0, "total": 0})
             self._winrate_per_eco: dict[str, list[float]] = {}
-            for game, color in self.player.iterate_games():
+            for game in self.player.iterate_games():
                 eco_code = game.game.headers.get("ECO", "unknown")
                 if self.player.did_player_win(game) == 1.0:
                     eco_data[eco_code]["wins"] += 1
@@ -175,7 +191,7 @@ class PlayerStats:
         return self._acpl_standard_deviation
 
     @property
-    def acpl_opening_list(self):
+    def acpl_opening_list(self) -> list[float]:
         """Gathers all of the acpl computed for the moves in the openings"""
 
         if self._acpl_opening_list is None:
@@ -197,7 +213,7 @@ class PlayerStats:
         if len(values) < 2:
             return 0.0
 
-        return float(numpy.std(values, ddof=1))
+        return float(np.std(values, ddof=1))
 
     def acpl_opening_stand_dev(self):
         return self.compute_acpl_standard_deviation(self.acpl_opening_list)
@@ -207,7 +223,10 @@ class PlayerStats:
 
         if self._acpl is None:
             self._acpl = []
-            tasks = [game.get_acpl_for_color(color) for game, color in self.player.iterate_games()]
+            tasks = [
+                game.get_acpl_for_color(self.player.which_color_is_player(game))
+                for game in self.player.iterate_games()
+            ]
 
             results = await asyncio.gather(*tasks)
 
@@ -245,7 +264,7 @@ class PlayerStats:
     def acpl_endgame_list(self):
         if self._acpl_endgame_list is None:
             self._acpl_endgame_list = []
-            for game in self.player.Games:
+            for game in self.player.iterate_games():
                 self._acpl_endgame_list.append(game.acpl_endgame)
         return self._acpl_endgame_list
 
@@ -257,11 +276,106 @@ class PlayerStats:
             )
         return self._coefficient_of_variation_endgame
 
+    @property
+    def acpl_midgame_list(self):
+        if self._acpl_midgame_list is None:
+            self._acpl_midgame_list = []
+            for game in self.player.iterate_games():
+                self._acpl_midgame_list.append(game.acpl_midgame)
+        return self._acpl_midgame_list
+
+    @property
+    def coefficient_of_variation_midgame(self):
+        if not self._coefficient_of_variation_midgame:
+            self._coefficient_of_variation_midgame = self.compute_coefficient_of_variation(
+                self.acpl_midgame_list
+            )
+        return self._coefficient_of_variation_midgame
+
+    @property
     def development_advantage_percentage(self):
-        counter=0
-        counter_faster=0
-        for game, color in self.player.iterate_games():
-            if game.which_color_developed_faster()==self.player.which_color_is_player(game):
-                counter_faster+=1
-            counter+=1
-        return math_stats.percentage(counter_faster,counter)
+        counter = 0
+        counter_faster = 0
+        for game in self.player.iterate_games():
+            if game.which_color_developed_faster() == self.player.which_color_is_player(game):
+                counter_faster += 1
+            if game.which_color_developed_faster() is not None:
+                counter += 1
+        return math_stats.percentage(counter_faster, counter)
+
+    @property
+    def volatilities_variances(self):
+        if self._volatilities_variances is not None:
+            return self._volatilities_variances
+        player_volatilities_variance = []
+
+        for game in self.player.iterate_games():
+            if len(game._move_analysis) <= 2:
+                continue
+            player_volatilities_variance.append(
+                np.var(game.volatilities(self.player.which_color_is_player(game)))
+            )
+
+        self._volatilities_variances = player_volatilities_variance
+        return self._volatilities_variances
+
+    @property
+    def mean_of_volatilities(self):
+        return math_stats.mean(self.volatilities_variances)
+
+    def volatility_index(self):
+        return self.mean_of_volatilities // ConfigData.HARDCODED_VALUE_TO_MEASURE_VOLATILITY
+
+    def sacrifice_percentage(self):
+        counter = 0
+        counter_sacrificed = 0
+        for game in self.player.iterate_games():
+            if game.has_a_sacrifice:
+                counter_sacrificed += 1
+            counter += 1
+        print(counter)
+        print(counter_sacrificed)
+        return math_stats.percentage(counter_sacrificed, counter)
+
+    @property
+    def percentage_of_forcing_moves(self):
+        total_counter, total_counter_forcing = 0, 0
+        for game in self.player.iterate_games():
+            games_counter, games_counter_forcing = game.forcing_moves
+            total_counter += games_counter
+            total_counter_forcing += games_counter_forcing
+        return math_stats.percentage(total_counter_forcing, total_counter)
+
+    @property
+    def percentage_of_mobile_moves(self):
+        total_counter, total_counter_mobile = 0, 0
+        for game in self.player.iterate_games():
+            games_counter, games_counter_mobile = game.mobile_moves
+            total_counter += games_counter
+            total_counter_mobile += games_counter_mobile
+        return math_stats.percentage(total_counter_mobile, total_counter)
+
+    @property
+    def mean_of_development_gains(self):
+        accumulator = 0
+        moves = 0
+        for game in self.player.iterate_games():
+            change_moves, change_accumulator = game.pressure_gains_accumulation
+            accumulator += change_accumulator
+            moves += change_moves
+        return round(accumulator / moves, 2) if moves != 0 else 0
+
+    @property
+    def mean_enemy_rating(self):
+        enemy_elo = []
+        for game in self.player.iterate_games():
+            color = self.player.which_color_is_player(game)
+            elo_key = "BlackElo" if color == chess.WHITE else "WhiteElo"
+            elo_str = game.game.headers[elo_key]
+            if elo_str and elo_str.strip().isdigit():
+                enemy_elo.append(int(elo_str))
+        return math_stats.mean(enemy_elo)
+
+    @property
+    def performance(self):
+        return round(self.mean_enemy_rating + ((self.score/len(self.player.Games))-0.5) *400,2)

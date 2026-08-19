@@ -6,6 +6,7 @@ from io import StringIO
 from pathlib import Path
 
 import chess.pgn
+
 from chessprograms.utils.Config import ConfigData
 
 

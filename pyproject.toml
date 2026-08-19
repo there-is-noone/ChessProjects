@@ -10,7 +10,8 @@ requires-python = ">=3.10"
 
 dependencies = [
     "python-chess>=1.999",
-    "numpy>=1.26"
+    "numpy>=1.26",
+    "chess>=1.11.2",
 ]
 
 # CLI entry point
@@ -32,6 +33,7 @@ packages = ["src/chessprograms"]
 [tool.uv]
 dev-dependencies = [
     "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
     "ruff>=0.5.0",
 ]
 

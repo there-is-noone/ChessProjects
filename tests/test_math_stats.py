@@ -1,11 +1,4 @@
-"""
-Tests for chessprograms.utils.math_stat
-
-This is the easiest module in the project to start with because both
-functions are "pure": given the same input they always return the same
-output, and they don't touch the engine, the filesystem, or any other
-class. No setup, no mocking, no fixtures needed.
-"""
+"""Basic tests covering the math functions that might be growing in number"""
 
 import pytest
 
