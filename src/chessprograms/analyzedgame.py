@@ -1,14 +1,18 @@
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 import chess.pgn
-import numpy as np
+import enums
+
 import chessprograms.utils.math_stat as math_stats
 from chessprograms.engineanalyzer import EngineAnalyzer
 from chessprograms.openings.openingbook import OpeningBook
 from chessprograms.utils import moveanalysis
 from chessprograms.utils.Config import ConfigData
 from chessprograms.utils.moveanalysis import MoveAnalysis
-import enums
+
+if TYPE_CHECKING:
+    from chessprograms.player import Player
 
 
 @dataclass(repr=False)
@@ -226,6 +230,36 @@ class AnalyzedGame:
     def blunder_list(self):
         return [m for m in self._move_analysis if m.severity != moveanalysis.BlunderSeverity.NONE]
 
+    def had_comeback(self, player: "Player",color: chess.Color, threshold: int = -200):
+        if self._move_analysis is None or not self._move_analysis:
+            return None
+        evals_from_players_perspective = []
+        for move in self._move_analysis:
+            if color == chess.WHITE:
+                evals_from_players_perspective.append(move.eval_after)
+            else:
+                evals_from_players_perspective.append(-move.eval_after)
+
+        worst_eval = min(evals_from_players_perspective)
+        was_in_trouble = worst_eval < threshold
+        won = player.did_player_win(self)== 1.0
+        return won and was_in_trouble
+
+    def had_advantage_and_lost(self, player: "Player",color: chess.Color, threshold: int = 200):
+        if self._move_analysis is None or not self._move_analysis:
+            return None
+        evals_from_players_perspective = []
+        for move in self._move_analysis:
+            if color == chess.WHITE:
+                evals_from_players_perspective.append(move.eval_after)
+            else:
+                evals_from_players_perspective.append(-move.eval_after)
+
+        best_eval = max(evals_from_players_perspective)
+        was_winning = best_eval > threshold
+        lost = player.did_player_win(self)== 0.0
+        return lost and was_winning
+
     def which_color_developed_faster(self):
         move = self.transition_opening_to_mid - 2
         try:
@@ -385,13 +419,14 @@ def serialize_game(analyzed: AnalyzedGame):
         "evals_before": [m.eval_before for m in analysis],
         "evals_after": [m.eval_after for m in analysis],
         "losses": [m.loss for m in analysis],
+        "piece_types": [m.piece_type for m in analysis],
         "development": [m.development_advantage for m in analysis],
         "acpl_opening": analyzed.acpl_opening,
         "acpl_white": analyzed._acpl_white,
         "acpl_black": analyzed._acpl_black,
         "early_mid_transition_ply": analyzed.transition_opening_to_mid,
         "mid_endgame_transition_ply": analyzed.transition_mid_to_endgame,
-        "is_sacrifices": [m.is_sacrifice for m in analysis],
+        #        "is_sacrifices": [m.is_sacrifice for m in analysis],
         "is_mobile": [m.is_mobile for m in analysis],
         "development_gains": [m.pressure_gain for m in analysis],
     }

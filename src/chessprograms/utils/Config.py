@@ -25,8 +25,8 @@ class ConfigData:
     DEVELOPMENT_DIFFERENCE = 0.5
 
     ENGINE_PATH = "/home/kkrec/stockfish/stockfish-ubuntu-x86-64-avx2"
-    FILE_PATH = "/home/kkrec/chessgames/Tal.pgn"
-    PLAYER_NAME = "Tal, Mihail"
+    FILE_PATH = "/home/kkrec/chessgames/Filip4545.pgn"
+    PLAYER_NAME = "Filip4545"
     ENGINE_ANALYSIS_TYPE = "acpl_deep"
     OPENING_BOOK_PATH = "opening_book.pkl"
     PICKLE_FILE = f"data/analysis{PLAYER_NAME}{ENGINE_ANALYSIS_TYPE}.pkl"

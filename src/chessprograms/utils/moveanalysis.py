@@ -1,8 +1,16 @@
 from dataclasses import dataclass
 from enum import Enum
+
 import chess
 
 from chessprograms.utils.Config import ConfigData
+
+
+class BlunderSeverity(Enum):
+    NONE = 0
+    INACCURACY = 1  # 50–100cp
+    MISTAKE = 2  # 100–300cp
+    BLUNDER = 3  # >300cp
 
 
 @dataclass
@@ -12,6 +20,7 @@ class MoveAnalysis:
     eval_before: int | None
     eval_after: int | None
     color: chess.Color
+    piece_type: chess.PieceType
     development_advantage: float
     # is_sacrifice: bool
     is_mobile: bool
@@ -37,10 +46,3 @@ class MoveAnalysis:
             swing = abs(self.eval_after - self.eval_before)
             return min(swing, ConfigData.VOLATILITY_UPPER_BOUND)
         return self.eval_before if self.eval_before is not None else self.eval_after
-
-
-class BlunderSeverity(Enum):
-    NONE = 0
-    INACCURACY = 1  # 50–100cp
-    MISTAKE = 2  # 100–300cp
-    BLUNDER = 3  # >300cp

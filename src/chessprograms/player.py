@@ -13,8 +13,7 @@ class Player:
     Games: list[AnalyzedGame] = field(default_factory=list)
 
     def iterate_games(self):
-        for game in self.Games:
-            yield game
+        yield from self.Games
 
     def add_game(self, game: AnalyzedGame):
         if game._move_analysis is None:

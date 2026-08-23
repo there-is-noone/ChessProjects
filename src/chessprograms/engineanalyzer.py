@@ -106,7 +106,6 @@ class EngineAnalyzer:
 
     async def analyze_game(self, game: chess.pgn.Game) -> list[MoveAnalysis]:
         """Gathers all of the evaluations for a single game"""
-
         board = game.board()
         result = []
         development = {
@@ -146,6 +145,7 @@ class EngineAnalyzer:
             node = node.variations[0]
             move = node.move
             piece = board.piece_at(move.from_square)
+            piece_type = piece.piece_type
             color = piece.color
 
             match piece.piece_type:
@@ -239,15 +239,15 @@ class EngineAnalyzer:
                     prev_eval,
                     current_eval,
                     moving_color,
+                    piece_type,
                     development_adv,
-                    is_sacrifice,
+                    # is_sacrifice,
                     is_mobile,
                     pressure_gain,
                 )
             )
 
             prev_eval = current_eval
-
         return result
 
     @staticmethod

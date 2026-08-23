@@ -55,6 +55,7 @@ async def main():
                 for uci_move in pickled_game.get("moves", []):
                     node = node.add_variation(chess.Move.from_uci(uci_move))
                 analyzed = AnalyzedGame(game, analyzer)
+                piece_types = pickled_game.get("piece_types")
                 analyzed._acpl_white = pickled_game.get("acpl_white")
                 analyzed._acpl_black = pickled_game.get("acpl_black")
                 analyzed._acpl_opening = pickled_game.get("acpl_opening")
@@ -74,6 +75,7 @@ async def main():
                             eval_before=eval_before_val,
                             eval_after=eval_after_val,
                             color=chess.WHITE if idx % 2 == 0 else chess.BLACK,
+                            piece_type=piece_type,
                             development_advantage=dev_adv,
                             # is_sacrifice=is_sacrifice,
                             is_mobile=is_mobile,
@@ -85,6 +87,7 @@ async def main():
                             eval_before_val,
                             eval_after_val,
                             dev_adv,
+                            piece_type,
                             # is_sacrifice,
                             is_mobile,
                             pressure_gain,
@@ -95,6 +98,7 @@ async def main():
                                 pickled_game["evals_before"],
                                 pickled_game["evals_after"],
                                 development,
+                                piece_types,
                                 # pickled_game["is_sacrifices"],
                                 pickled_game["is_mobile"],
                                 pickled_game["development_gains"],
@@ -190,6 +194,35 @@ async def main():
     with Timer("Performance"):
         print(f"Mean enemy rating: {stats.mean_enemy_rating}")
         print(f"Performance measure: {stats.performance}")
+
+    with Timer("piece type analysis"):
+        dist = stats.piece_type_distribution
+        pct = stats.piece_type_percentages
+
+        print("\n=== Piece Type Distribution ===")
+        for piece_type, count in sorted(dist.items(), key=lambda x: x[1], reverse=True):
+            percentage = pct[piece_type]
+            print(f"{piece_type:8} {count:4} moves ({percentage:5.1f}%)")
+
+        print("\nInterpretation:")
+        knight_pct = pct.get(chess.KNIGHT, 0)
+        bishop_pct = pct.get(chess.BISHOP, 0)
+        if knight_pct + bishop_pct > 40:
+            print("  → Tactical player (lots of minor pieces)")
+
+        pawn_pct = pct.get(chess.PAWN, 0)
+        if pawn_pct > 50:
+            print("  → Positional player (lots of pawn moves)")
+
+        queen_pct = pct.get(chess.QUEEN, 0)
+        if queen_pct > 25:
+            print("  → Aggressive player (lots of queen moves)")
+
+    with Timer("Comeback rate analysis"):
+        print(f"Comeback rate: {stats.comeback_rate}%")
+
+    with Timer("Lost chances analysis"):
+        print(f"Lost chances rate: {stats.lost_chances_rate}%")
 
         """    with Timer("Gambit Check"):
         for nr, game in enumerate(test.Games[:1000]):

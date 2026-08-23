@@ -14,7 +14,7 @@ from chessprograms.utils.Config import ConfigData
 class PlayerStats:
     player: Player
     _winrate: float | None = field(default=None)
-    _score : float |None = field(default= None)
+    _score: float | None = field(default=None)
 
     _winrate_white: float | None = field(default=None)
     _winrate_black: float | None = field(default=None)
@@ -43,13 +43,14 @@ class PlayerStats:
     _volatilities_variances: list | None = field(default=None)
 
     @property
-    def score(self) ->float | int:
+    def score(self) -> float | None:
         if not self._score:
-            score=0
+            score = 0
             for game in self.player.iterate_games():
-                score+=self.player.did_player_win(game)
+                score += self.player.did_player_win(game)
             self._score = score
         return self._score
+
     @property
     def winrate_white(self) -> float:
         """Returns the winrate only for the games played with white"""
@@ -65,7 +66,7 @@ class PlayerStats:
         return self._winrate_white
 
     @property
-    def winrate_black(self) -> float:
+    def winrate_black(self) -> float | None:
         """Returns the winrate only for the games played with black"""
 
         if self._winrate_black is None:
@@ -187,8 +188,9 @@ class PlayerStats:
         """returns standard deviation for all of the games"""
 
         acpl = await self.get_acpl_list()
-        self._acpl_standard_deviation = self.compute_acpl_standard_deviation(acpl)
-        return self._acpl_standard_deviation
+        if acpl:
+            self._acpl_standard_deviation = self.compute_acpl_standard_deviation(acpl)
+        return self._acpl_standard_deviation if self._acpl_standard_deviation else 0
 
     @property
     def acpl_opening_list(self) -> list[float]:
@@ -378,4 +380,65 @@ class PlayerStats:
 
     @property
     def performance(self):
-        return round(self.mean_enemy_rating + ((self.score/len(self.player.Games))-0.5) *400,2)
+        return round(
+            self.mean_enemy_rating + ((self.score / len(self.player.Games)) - 0.5) * 400, 2
+        )
+
+    @property
+    def piece_type_distribution(self) -> dict[chess.PieceType, int]:
+        distribution = {name: 0 for name in chess.PIECE_TYPES}
+        for game in self.player.iterate_games():
+            if game._move_analysis is None:
+                continue
+            for move_analysis in game._move_analysis:
+                distribution[move_analysis.piece_type] += 1
+        return distribution
+
+    @property
+    def piece_type_percentages(self) -> dict[chess.PieceType, float]:
+        distribution = self.piece_type_distribution
+        total = sum(distribution.values())
+        if total == 0:
+            return {k: 0.0 for k in distribution}
+
+        return {k: round((v / total) * 100, 2) for k, v in distribution.items()}
+
+    @property
+    def comeback_rate(self) -> float:
+        comebacks = 0
+        total = 0
+
+        for game in self.player.iterate_games():
+            color = self.player.which_color_is_player(game)
+
+            if color is None:
+                continue
+
+            if game._move_analysis is None or not game._move_analysis:
+                continue
+
+            if game.had_comeback(self.player, color):  # ← parametr gracza
+                comebacks += 1
+            total += 1
+
+        return round((comebacks / total * 100),2) if total > 0 else 0.0
+
+    @property
+    def lost_chances_rate(self) -> float:
+        lost_chances = 0
+        total = 0
+
+        for game in self.player.iterate_games():
+            color = self.player.which_color_is_player(game)
+
+            if color is None:
+                continue
+
+            if game._move_analysis is None or not game._move_analysis:
+                continue
+
+            if game.had_advantage_and_lost(self.player, color):  # ← parametr gracza
+                lost_chances += 1
+            total += 1
+
+        return round((lost_chances / total * 100),2) if total > 0 else 0.0

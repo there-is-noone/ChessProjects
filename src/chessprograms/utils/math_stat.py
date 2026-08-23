@@ -1,4 +1,3 @@
-import numpy
 
 
 def percentage(part: int, total: int, decimals: int = 2) -> float:
