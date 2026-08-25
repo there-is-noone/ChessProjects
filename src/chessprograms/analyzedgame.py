@@ -20,7 +20,7 @@ class AnalyzedGame:
     game: chess.pgn.Game
     analyzer: EngineAnalyzer
     _opening_book: OpeningBook = field(init=False)
-    _move_analysis: list[MoveAnalysis] = field(default=None)
+    move_analysis: list[MoveAnalysis] = field(default=None)
     _acpl_white: float | None = field(default=None)
     _acpl_black: float | None = field(default=None)
     _acpl_opening: float | None = field(default=None)
@@ -49,9 +49,9 @@ class AnalyzedGame:
 
     async def get_analysis(self):
         """returns the analysis of the Game"""
-        if not self._move_analysis:
-            self._move_analysis = await self.analyzer.analyze_game(self.game)
-        return self._move_analysis
+        if not self.move_analysis:
+            self.move_analysis = await self.analyzer.analyze_game(self.game)
+        return self.move_analysis
 
     async def precompute_acpl(self):
         """Computes the acpl for a game for each of the colors separately"""
@@ -158,13 +158,13 @@ class AnalyzedGame:
         """calculates the acpl for entire opening phase of the game"""
 
         if self._acpl_opening is None:
-            if not self._move_analysis:
+            if not self.move_analysis:
                 return 0.0
 
             opening_moves = []
             current_ply = 0
 
-            for m in self._move_analysis:
+            for m in self.move_analysis:
                 if current_ply < self.transition_opening_to_mid:
                     opening_moves.append(m)
                 current_ply += 1
@@ -193,13 +193,13 @@ class AnalyzedGame:
     @property
     def acpl_midgame(self):
         if self._acpl_midgame is None:
-            if not self._move_analysis:
+            if not self.move_analysis:
                 return 0.0
 
             midgame_moves = []
 
             for move in range(self.transition_opening_to_mid, self.transition_mid_to_endgame):
-                midgame_moves.append(self._move_analysis[move])
+                midgame_moves.append(self.move_analysis[move])
 
             if not midgame_moves:
                 self._acpl_midgame = 0.0
@@ -211,13 +211,13 @@ class AnalyzedGame:
     @property
     def acpl_endgame(self):
         if self._acpl_endgame is None:
-            if not self._move_analysis:
+            if not self.move_analysis:
                 return 0.0
 
             endgame_moves = []
 
-            for move in range(self.transition_mid_to_endgame, len(self._move_analysis)):
-                endgame_moves.append(self._move_analysis[move])
+            for move in range(self.transition_mid_to_endgame, len(self.move_analysis)):
+                endgame_moves.append(self.move_analysis[move])
 
             if not endgame_moves:
                 self._acpl_endgame = 0.0
@@ -228,13 +228,13 @@ class AnalyzedGame:
 
     @property
     def blunder_list(self):
-        return [m for m in self._move_analysis if m.severity != moveanalysis.BlunderSeverity.NONE]
+        return [m for m in self.move_analysis if m.severity != moveanalysis.BlunderSeverity.NONE]
 
-    def had_comeback(self, player: "Player",color: chess.Color, threshold: int = -200):
-        if self._move_analysis is None or not self._move_analysis:
+    def had_comeback(self, player: "Player", color: chess.Color, threshold: int = -200):
+        if self.move_analysis is None or not self.move_analysis:
             return None
         evals_from_players_perspective = []
-        for move in self._move_analysis:
+        for move in self.move_analysis:
             if color == chess.WHITE:
                 evals_from_players_perspective.append(move.eval_after)
             else:
@@ -242,14 +242,14 @@ class AnalyzedGame:
 
         worst_eval = min(evals_from_players_perspective)
         was_in_trouble = worst_eval < threshold
-        won = player.did_player_win(self)== 1.0
+        won = player.did_player_win(self) == 1.0
         return won and was_in_trouble
 
-    def had_advantage_and_lost(self, player: "Player",color: chess.Color, threshold: int = 200):
-        if self._move_analysis is None or not self._move_analysis:
+    def had_advantage_and_lost(self, player: "Player", color: chess.Color, threshold: int = 200):
+        if self.move_analysis is None or not self.move_analysis:
             return None
         evals_from_players_perspective = []
-        for move in self._move_analysis:
+        for move in self.move_analysis:
             if color == chess.WHITE:
                 evals_from_players_perspective.append(move.eval_after)
             else:
@@ -257,16 +257,16 @@ class AnalyzedGame:
 
         best_eval = max(evals_from_players_perspective)
         was_winning = best_eval > threshold
-        lost = player.did_player_win(self)== 0.0
+        lost = player.did_player_win(self) == 0.0
         return lost and was_winning
 
     def which_color_developed_faster(self):
         move = self.transition_opening_to_mid - 2
         try:
-            development_advantage_at_move = self._move_analysis[move].development_advantage
+            development_advantage_at_move = self.move_analysis[move].development_advantage
         except IndexError and TypeError:
             print("this game is a mistaken one")
-            print(self._move_analysis)
+            print(self.move_analysis)
             return None
         if development_advantage_at_move > ConfigData.DEVELOPMENT_DIFFERENCE:
             return chess.WHITE
@@ -279,15 +279,15 @@ class AnalyzedGame:
         if self.transition_opening_to_mid is None:
             return None
 
-        if self._move_analysis is None:
+        if self.move_analysis is None:
             return None
         move = min(self.game.end().ply(), self.transition_opening_to_mid + 1)
 
         if move < 2:
-            return self._move_analysis[0].color
+            return self.move_analysis[0].color
 
-        prev = self._move_analysis[move - 2]
-        curr = self._move_analysis[move - 1]
+        prev = self.move_analysis[move - 2]
+        curr = self.move_analysis[move - 1]
 
         if curr.pieces_offensive > prev.pieces_offensive:
             return curr.color
@@ -299,14 +299,14 @@ class AnalyzedGame:
     def volatilities(self, color):
         volatilities = []
         node = self.game
-        for move in self._move_analysis:
+        for move in self.move_analysis:
             if move.color == color:
                 volatilities.append(move.volatility)
         return volatilities
 
     """@property
     def has_a_sacrifice(self):
-        for move in self._move_analysis:
+        for move in self.move_analysis:
             if move.is_sacrifice:
                 return True
         return False"""
@@ -330,7 +330,7 @@ class AnalyzedGame:
     def mobile_moves(self):
         counter = 0
         counter_mobile = 0
-        for move in self._move_analysis:
+        for move in self.move_analysis:
             if move.is_mobile:
                 counter_mobile += 1
             counter += 1
@@ -340,7 +340,7 @@ class AnalyzedGame:
     def pressure_gains_accumulation(self):
         accumulator = 0
         moves = 0
-        for move in self._move_analysis:
+        for move in self.move_analysis:
             accumulator += move.pressure_gain
             moves += 1
         return moves, accumulator
@@ -384,7 +384,7 @@ class AnalyzedGame:
                 loss = after_capture_material - before_material
 
                 if opponent_captures and loss < -1:
-                    eval_after = self._move_analysis[i].eval_after
+                    eval_after = self.move_analysis[i].eval_after
 
                     if mover == chess.BLACK:
                         eval_after = -eval_after
@@ -411,7 +411,7 @@ class AnalyzedGame:
 def serialize_game(analyzed: AnalyzedGame):
     """makes AnalyzedGame easier to pickle"""
 
-    analysis = analyzed._move_analysis
+    analysis = analyzed.move_analysis
 
     return {
         "headers": dict(analyzed.game.headers),

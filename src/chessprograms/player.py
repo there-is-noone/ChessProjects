@@ -16,9 +16,9 @@ class Player:
         yield from self.Games
 
     def add_game(self, game: AnalyzedGame):
-        if game._move_analysis is None:
+        if game.move_analysis is None:
             return
-        if len(game._move_analysis) >= 2:
+        if len(game.move_analysis) >= 2:
             self.Games.append(game)
 
     def __str__(self):
