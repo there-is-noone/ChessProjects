@@ -16,8 +16,8 @@ class WinrateStats:
     _winrate_white: float | None = field(default=None)
     _winrate_black: float | None = field(default=None)
 
-    _ending_winrate: float | None = field(default=None)
     _ending_rate: float | None = field(default=None)
+    _ending_winrate: float | None = field(default=None)
 
     _short_game_likeness: float | None = field(default=None)
     _short_game_winrate: float | None = field(default=None)

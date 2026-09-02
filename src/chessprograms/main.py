@@ -1,138 +1,55 @@
 import asyncio
 import os.path
-import pickle
+import os
 
 import chess.engine
 import chess.pgn
-
-from chessprograms import analyzedgame
-from chessprograms.analyzedgame import AnalyzedGame, serialize_game
-from chessprograms.engineanalyzer import EngineAnalyzer
-from chessprograms.openings import openingbook
-from chessprograms.player import Player
-from chessprograms.player_stats.player_stats import PlayerStats
-from chessprograms.utils.Config import ConfigData
-from chessprograms.utils.EngineStrategies import STRATEGIES
-from chessprograms.utils.moveanalysis import MoveAnalysis
-from chessprograms.utils.stopwatch import Timer
+import loading
+from analyzedgame import AnalyzedGame
+from engineanalyzer import EngineAnalyzer
+from openings import openingbook
+from player import Player
+from player_stats.player_stats import PlayerStats
+from utils.Config import ConfigData
+from utils.EngineStrategies import STRATEGIES
+from utils.stopwatch import Timer
 
 
 async def main():
+    player_name = ConfigData.PLAYER_NAME
+    choice = input("Insert the player lichess nickname: ")
+    if choice != "":
+        player_name = choice
     # initializing the objects used througout the program
     transport, engine = await chess.engine.popen_uci(ConfigData.ENGINE_PATH)
     await engine.configure({"Threads": ConfigData.THREADS})
     strategy = STRATEGIES[ConfigData.ENGINE_ANALYSIS_TYPE]
     analyzer = EngineAnalyzer(engine, strategy)
-    test = Player(ConfigData.PLAYER_NAME)
+    test = Player(player_name)
     stats = PlayerStats(test)
 
-    print(analyzedgame.king_pressure(chess.Board("6k1/6pp/8/7Q/8/8/8/6K1 w - - 0 1"), chess.BLACK))
+    AnalyzedGame._opening_book = openingbook.check_for_opening_book()
+    pickle_file = f"data/analysis{player_name}{ConfigData.ENGINE_ANALYSIS_TYPE}.pkl"
+    file_path = f"/home/kkrec/chessgames/{player_name}.pgn"
 
-    try:
-        opening = openingbook.OpeningBook.load()
-    except FileNotFoundError:
-        opening = openingbook.OpeningBook.build_trie()
-        opening.save()
-    AnalyzedGame._opening_book = opening
-
-    print(ConfigData.PICKLE_FILE)
     # loading/saving analyzed games
-    if os.path.exists(ConfigData.PICKLE_FILE):
-        with Timer("pickle read"):
-            with open(ConfigData.PICKLE_FILE, "rb") as f:
-                all_games_data = pickle.load(f)
-        with Timer("decoding"):
-            for pickled_game in all_games_data:
-                if len(pickled_game["moves"]) < 2:
-                    continue
+    if os.path.exists(pickle_file):
+        all_games_data = loading.load_from_pickle(pickle_file)
+        loading.decode_from_pickle(all_games_data, test,analyzer)
 
-                game = chess.pgn.Game()
-
-                for header_name, header_value in pickled_game["headers"].items():
-                    game.headers[header_name] = header_value
-
-                node = game
-                for uci_move in pickled_game.get("moves", []):
-                    node = node.add_variation(chess.Move.from_uci(uci_move))
-                analyzed = AnalyzedGame(game, analyzer)
-                piece_types = pickled_game.get("piece_types")
-                analyzed._acpl_white = pickled_game.get("acpl_white")
-                analyzed._acpl_black = pickled_game.get("acpl_black")
-                analyzed._acpl_opening = pickled_game.get("acpl_opening")
-                analyzed._transition_opening_to_mid = pickled_game.get("early_mid_transition_ply")
-                analyzed._transition_mid_to_endgame = pickled_game.get("mid_endgame_transition_ply")
-
-                if "losses" in pickled_game and "moves" in pickled_game:
-                    development = pickled_game.get("development")
-                    if development is None:
-                        development = [0.0] * len(pickled_game["moves"])
-
-                    # gathering all information from decoding in one big list of moves
-                    analyzed.move_analysis = [
-                        MoveAnalysis(
-                            move=chess.Move.from_uci(m_uci),
-                            loss=loss_val,
-                            eval_before=eval_before_val,
-                            eval_after=eval_after_val,
-                            color=chess.WHITE if idx % 2 == 0 else chess.BLACK,
-                            piece_type=piece_type,
-                            development_advantage=dev_adv,
-                            # is_sacrifice=is_sacrifice,
-                            is_mobile=is_mobile,
-                            pressure_gain=pressure_gain,
-                        )
-                        for idx, (
-                            m_uci,
-                            loss_val,
-                            eval_before_val,
-                            eval_after_val,
-                            dev_adv,
-                            piece_type,
-                            # is_sacrifice,
-                            is_mobile,
-                            pressure_gain,
-                        ) in enumerate(
-                            zip(
-                                pickled_game["moves"],
-                                pickled_game["losses"],
-                                pickled_game["evals_before"],
-                                pickled_game["evals_after"],
-                                development,
-                                piece_types,
-                                # pickled_game["is_sacrifices"],
-                                pickled_game["is_mobile"],
-                                pickled_game["development_gains"],
-                            )
-                        )
-                    ]
-                    test.add_game(analyzed)
+    elif os.path.exists(file_path):
+        await loading.load_from_file(file_path, test, analyzer, pickle_file)
 
     else:
-        all_games_data = []
-        with open(ConfigData.FILE_PATH, encoding="utf-8") as games:
-            nr = 1
-            with Timer("Full analysis time"):
-                while game := chess.pgn.read_game(games):
-                    # If moves are broken/from different starting board, throws an error
-                    if "correspondence" in game.headers["Event"]:
-                        continue
-                    # use the game that was read from the file to the Player library of the games
-                    analyzed = AnalyzedGame(game, analyzer)
-                    # with Timer("Analysis"):
-                    await analyzed.precompute_acpl()
-                    test.add_game(analyzed)
-                    nr += 1
-                    all_games_data.append(serialize_game(analyzed))
-
-        with Timer("pickling the games"):
-            with open(ConfigData.PICKLE_FILE, "wb") as f:
-                pickle.dump(all_games_data, f)
+        print("Found the profile")
+        data = await loading.get_games_from_lichess(
+            player_name, ["rapid", "blitz", "classical, bullet"]
+        )
+        print("Found the games")
+        await loading.analyze(data, test, analyzer, pickle_file)
 
     # everything under it is just testing how the program has calculated the stats
     # will be changed a lot, will take shape after having a distinct first alpha version
-    """with Timer("game len"):
-        for game in stats.player.iterate_games():
-            print(len(game.move_analysis))"""
 
     with Timer("basic stats"):
         print("Winrate:", stats.winrate_stats.winrate, "%")
@@ -181,11 +98,23 @@ async def main():
         """for i, game in enumerate(test.Games):
             print("White" if game.which_color_attacked() == chess.WHITE else "Black")"""
 
-        print(f"how often you get developed faster: {stats.development_stats.development_advantage_percentage}%")
+        print(
+            f"how often you get developed faster: {stats.development_stats.development_advantage_percentage}%"
+        )
 
     with Timer("Volatilities check"):
         print(f"mean of volatilities: {stats.volatility_stats.mean}")
         print(f"volatility index for calculation: {stats.volatility_stats.index()}")
+
+    with Timer("Blunder check"):
+        print(
+            f"amount of moves: {sum(len(game.move_analysis) for game in stats.player.iterate_games())}"
+        )
+        print(
+            f"amount of blunders: {sum(game.blunder_count for game in stats.player.iterate_games())}"
+        )
+
+        print(f"blunder rate: {stats.tactical_stats.blunder_rate}%")
 
     """with Timer("sacrifice percentage"):
         print(f"percentage of sacced games: {stats.sacrifice_percentage()}%")"""
@@ -215,15 +144,15 @@ async def main():
         print("\nInterpretation:")
         knight_pct = pct.get(chess.KNIGHT, 0)
         bishop_pct = pct.get(chess.BISHOP, 0)
-        if knight_pct + bishop_pct > 40:
+        if knight_pct + bishop_pct > 33:
             print("  → Tactical player (lots of minor pieces)")
 
         pawn_pct = pct.get(chess.PAWN, 0)
-        if pawn_pct > 50:
+        if pawn_pct > 33:
             print("  → Positional player (lots of pawn moves)")
 
         queen_pct = pct.get(chess.QUEEN, 0)
-        if queen_pct > 25:
+        if queen_pct > 15:
             print("  → Aggressive player (lots of queen moves)")
 
     with Timer("Comeback rate analysis"):

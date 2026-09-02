@@ -8,6 +8,27 @@ from chessprograms.utils.Config import ConfigData
 
 
 @dataclass
+class OpeningData:
+    opening_name: str = "Unknown"
+    amount_of_games: int = 0
+    wins: int = 0
+    draws: int = 0
+    losses: int = 0
+
+    @property
+    def winrate(self):
+        return math_stats.percentage(self.wins, self.amount_of_games)
+
+    @property
+    def lossrate(self):
+        return math_stats.percentage(self.losses, self.amount_of_games)
+
+    @property
+    def drawrate(self):
+        return math_stats.percentage(self.draws, self.amount_of_games)
+
+
+@dataclass
 class OpeningStats:
     player: Player
 
@@ -65,24 +86,3 @@ class OpeningStats:
         ]
         sorted_candidates = sorted(candidates, key=lambda item: item[1].winrate, reverse=True)
         return [res.opening_name for _, res in sorted_candidates[:3]]
-
-
-@dataclass
-class OpeningData:
-    opening_name: str = "Unknown"
-    amount_of_games: int = 0
-    wins: int = 0
-    draws: int = 0
-    losses: int = 0
-
-    @property
-    def winrate(self):
-        return math_stats.percentage(self.wins, self.amount_of_games)
-
-    @property
-    def lossrate(self):
-        return math_stats.percentage(self.losses, self.amount_of_games)
-
-    @property
-    def drawrate(self):
-        return math_stats.percentage(self.draws, self.amount_of_games)

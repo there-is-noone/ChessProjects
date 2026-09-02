@@ -12,33 +12,29 @@ dependencies = [
     "python-chess>=1.999",
     "numpy>=1.26",
     "chess>=1.11.2",
+    "aiohttp>=3.14.3",
 ]
 
-# CLI entry point
 [project.scripts]
 chessprograms = "chessprograms.main:main"
 
-# 🔧 Build system (standard, no drama)
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 
-# 📦 Tell Python where your package lives
 [tool.hatch.build.targets.wheel]
 packages = ["src/chessprograms"]
 
 
-# ⚡ uv settings (minimal, uv handles most things automatically)
-[tool.uv]
-dev-dependencies = [
+
+[dependency-groups]
+dev =[
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
     "ruff>=0.5.0",
 ]
 
-
-# 🧹 Ruff (you already had it — this is a solid baseline)
 [tool.ruff]
 line-length = 100
 target-version = "py310"

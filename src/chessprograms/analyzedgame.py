@@ -20,7 +20,8 @@ class AnalyzedGame:
     game: chess.pgn.Game
     analyzer: EngineAnalyzer
     _opening_book: OpeningBook = field(init=False)
-    move_analysis: list[MoveAnalysis] = field(default=None)
+    move_analysis: list[MoveAnalysis] = field(default_factory=list)
+
     _acpl_white: float | None = field(default=None)
     _acpl_black: float | None = field(default=None)
     _acpl_opening: float | None = field(default=None)
@@ -49,7 +50,7 @@ class AnalyzedGame:
 
     async def get_analysis(self):
         """returns the analysis of the Game"""
-        if not self.move_analysis:
+        if self.move_analysis == []:
             self.move_analysis = await self.analyzer.analyze_game(self.game)
         return self.move_analysis
 
@@ -228,7 +229,17 @@ class AnalyzedGame:
 
     @property
     def blunder_list(self):
-        return [m for m in self.move_analysis if m.severity != moveanalysis.BlunderSeverity.NONE]
+        return [
+            move
+            for move in self.move_analysis
+            if move.severity != moveanalysis.BlunderSeverity.NONE
+        ]
+
+    @property
+    def blunder_count(self):
+        return sum(
+            move.severity == moveanalysis.BlunderSeverity.BLUNDER for move in self.blunder_list
+        )
 
     def had_comeback(self, player: "Player", color: chess.Color, threshold: int = -200):
         if self.move_analysis is None or not self.move_analysis:
@@ -264,7 +275,7 @@ class AnalyzedGame:
         move = self.transition_opening_to_mid - 2
         try:
             development_advantage_at_move = self.move_analysis[move].development_advantage
-        except IndexError and TypeError:
+        except (IndexError, TypeError):
             print("this game is a mistaken one")
             print(self.move_analysis)
             return None
@@ -298,7 +309,6 @@ class AnalyzedGame:
 
     def volatilities(self, color):
         volatilities = []
-        node = self.game
         for move in self.move_analysis:
             if move.color == color:
                 volatilities.append(move.volatility)
@@ -424,8 +434,6 @@ def serialize_game(analyzed: AnalyzedGame):
         "acpl_opening": analyzed.acpl_opening,
         "acpl_white": analyzed._acpl_white,
         "acpl_black": analyzed._acpl_black,
-        "early_mid_transition_ply": analyzed.transition_opening_to_mid,
-        "mid_endgame_transition_ply": analyzed.transition_mid_to_endgame,
         #        "is_sacrifices": [m.is_sacrifice for m in analysis],
         "is_mobile": [m.is_mobile for m in analysis],
         "development_gains": [m.pressure_gain for m in analysis],

@@ -36,3 +36,10 @@ class TacticalStats:
             total_counter += games_counter
             total_counter_mobile += games_counter_mobile
         return math_stats.percentage(total_counter_mobile, total_counter)
+
+    @property
+    def blunder_rate(self):
+        return math_stats.percentage(
+            sum(game.blunder_count for game in self.player.iterate_games()),
+            sum(len(game.move_analysis) for game in self.player.iterate_games()),
+        )

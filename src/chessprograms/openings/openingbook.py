@@ -77,6 +77,17 @@ def load_games(path):
         yield from reader
 
 
+def check_for_opening_book():
+    try:
+        openingbook = OpeningBook.load()
+
+    except FileNotFoundError:
+        openingbook = OpeningBook.build_trie()
+        openingbook.save()
+
+    return openingbook
+
+
 if __name__ == "__main__":
     games = OpeningBook.build_trie()
     games.save()

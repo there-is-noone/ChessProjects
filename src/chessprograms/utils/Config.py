@@ -14,7 +14,7 @@ class ConfigData:
     SACRIFICE_MAX_LOSS = 20
     INACCURACY_THRESHOLD = 50
     MISTAKE_THRESHOLD = 100
-    BLUNDER_THRESHOLD = 300
+    BLUNDER_THRESHOLD = 200
     TEMPO_LOSS = 0.5
     SHORT_GAME_THRESHOLD = 25
     CASTLING_BONUS = 1.5
@@ -25,11 +25,9 @@ class ConfigData:
     DEVELOPMENT_DIFFERENCE = 0.5
 
     ENGINE_PATH = "/home/kkrec/stockfish/stockfish-ubuntu-x86-64-avx2"
-    FILE_PATH = "/home/kkrec/chessgames/Filip4545.pgn"
-    PLAYER_NAME = "Filip4545"
+    PLAYER_NAME = "Tal, Mihail"
     ENGINE_ANALYSIS_TYPE = "acpl_deep"
     OPENING_BOOK_PATH = "opening_book.pkl"
-    PICKLE_FILE = f"data/analysis{PLAYER_NAME}{ENGINE_ANALYSIS_TYPE}.pkl"
 
     SACRIFICE_MATERIAL_THRESHOLD = 2
     MINIMUM_GAMES_FOR_VALID_WINRATE = 5

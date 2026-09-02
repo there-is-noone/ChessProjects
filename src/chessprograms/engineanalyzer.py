@@ -18,13 +18,13 @@ class EngineAnalyzer:
     strategy: EngineStrategies
     cache: OrderedDict = field(default_factory=OrderedDict)
 
-    def _cache_get(self, fen: str) -> tuple[int, chess.Move | None] | None:
+    def _cache_get(self, fen: str) -> tuple[int | None, list[chess.Move]] | None:
         if fen in self.cache:
             self.cache.move_to_end(fen)
             return self.cache[fen]
         return None
 
-    def _cache_set(self, fen: str, value: tuple[int | None, chess.Move | None]) -> None:
+    def _cache_set(self, fen: str, value: tuple[int | None, list[chess.Move]]) -> None:
         if fen in self.cache:
             self.cache.move_to_end(fen)
         else:
@@ -135,10 +135,6 @@ class EngineAnalyzer:
 
             best_eval, _ = await self.get_eval_and_best_move(best_board)
 
-        pieces_offensive = self.color_half_control(board, board.turn)
-        tmp = game
-        count = 0
-
         while not node.is_end():
             moving_color = board.turn
 
@@ -178,17 +174,12 @@ class EngineAnalyzer:
             if board.is_castling(move):
                 development[color]["castled"] = True
 
-            material_before = analyzedgame.total_material(board, color)
             mobility_before = analyzedgame.mobility(board, color)
             king_pressure_before = analyzedgame.king_pressure(board, color)
 
             board.push(move)
 
             current_eval, response_pv = await self.get_eval_and_pv(board)
-            enemy_best_move = response_pv[0] if response_pv else None
-            # is_sacrifice = False
-            is_mobile = False
-            pressure_gain = 0
 
             if move == best_move:
                 loss = 0
