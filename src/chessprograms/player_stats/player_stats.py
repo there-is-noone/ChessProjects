@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 
+from chessprograms.openings.openingbook import OpeningBook
 from chessprograms.player import Player
 from chessprograms.player_stats.acpl_stats import AcplStats
 from chessprograms.player_stats.comeback_stats import ComebackStats
@@ -15,6 +16,7 @@ from chessprograms.player_stats.winrate_stats import WinrateStats
 @dataclass
 class PlayerStats:
     player: Player
+
     opening_stats: OpeningStats = field(init=False)
     acpl_stats: AcplStats = field(init=False)
     winrate_stats: WinrateStats = field(init=False)

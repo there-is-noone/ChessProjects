@@ -2,6 +2,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 
 import chessprograms.utils.math_stat as math_stats
+from chessprograms.openings.openingbook import OpeningBook
 from chessprograms.openings.ecocode import ECOCode
 from chessprograms.player import Player
 from chessprograms.utils.Config import ConfigData
@@ -43,10 +44,10 @@ class OpeningStats:
 
         eco_data = defaultdict(OpeningData)
         for game in self.player.iterate_games():
-            eco_code = ECOCode(game.game.headers.get("ECO", "unknown"))
+            eco_code = game.eco_code
 
             if eco_data[eco_code].opening_name == "Unknown":
-                eco_data[eco_code].opening_name = game.game.headers.get("Opening", "Unknown")
+                eco_data[eco_code].opening_name = game.opening_name
 
             eco_data[eco_code].amount_of_games += 1
             self._total_games += 1

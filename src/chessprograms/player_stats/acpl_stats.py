@@ -66,7 +66,7 @@ class AcplStats:
         if self._acpl is None:
             self._acpl = []
             tasks = [
-                game.get_acpl_for_color(self.player.which_color_is_player(game))
+                game.calculate_acpl()
                 for game in self.player.iterate_games()
             ]
 

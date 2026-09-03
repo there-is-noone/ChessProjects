@@ -27,7 +27,7 @@ class PerformanceStats:
     def mean_enemy_rating(self):
         enemy_elo = []
         for game in self.player.iterate_games():
-            color = self.player.which_color_is_player(game)
+            color = self.player.which_color_is_player(game.game)
             elo_key = "BlackElo" if color == chess.WHITE else "WhiteElo"
             elo_str = game.game.headers[elo_key]
             if elo_str and elo_str.strip().isdigit():

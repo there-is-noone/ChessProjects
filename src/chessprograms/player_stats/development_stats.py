@@ -23,7 +23,7 @@ class DevelopmentStats:
         counter = 0
         counter_faster = 0
         for game in self.player.iterate_games():
-            if game.which_color_developed_faster() == self.player.which_color_is_player(game):
+            if game.which_color_developed_faster() == self.player.which_color_is_player(game.game):
                 counter_faster += 1
             if game.which_color_developed_faster() is not None:
                 counter += 1

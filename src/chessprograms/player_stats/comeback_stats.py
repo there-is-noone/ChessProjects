@@ -13,7 +13,7 @@ class ComebackStats:
         total = 0
 
         for game in self.player.iterate_games():
-            color = self.player.which_color_is_player(game)
+            color = self.player.which_color_is_player(game.game)
 
             if color is None:
                 continue
@@ -33,7 +33,7 @@ class ComebackStats:
         total = 0
 
         for game in self.player.iterate_games():
-            color = self.player.which_color_is_player(game)
+            color = self.player.which_color_is_player(game.game)
 
             if color is None:
                 continue

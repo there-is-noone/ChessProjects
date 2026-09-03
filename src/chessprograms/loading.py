@@ -12,7 +12,7 @@ from chessprograms.engineanalyzer import EngineAnalyzer
 from chessprograms.player import Player
 
 
-async def load_from_file(file, player: Player, analyzer: EngineAnalyzer, pickle_file):
+def load_from_file(file, player: Player, analyzer: EngineAnalyzer, pickle_file):
     with open(file, encoding="utf-8") as games:
         with Timer("Full analysis time"):
             games_list = []
@@ -22,16 +22,15 @@ async def load_from_file(file, player: Player, analyzer: EngineAnalyzer, pickle_
                 if "correspondence" in game.headers["Event"]:
                     continue
                 games_list.append(game)
-            all_games_data = await analyze(games_list, player, analyzer, pickle_file)
-
+            return games_list
 
 
 def load_from_pickle(file):
     with Timer("pickle read"):
-
         with open(file, "rb") as f:
             all_games_data = pickle.load(f)
     return all_games_data
+
 
 def decode_from_pickle(all_games_data: list, player: Player, analyzer: EngineAnalyzer):
     with Timer("decoding"):
@@ -47,10 +46,9 @@ def decode_from_pickle(all_games_data: list, player: Player, analyzer: EngineAna
             node = game
             for uci_move in pickled_game.get("moves", []):
                 node = node.add_variation(chess.Move.from_uci(uci_move))
-            analyzed = AnalyzedGame(game, analyzer)
+            analyzed = AnalyzedGame(game, analyzer, player.which_color_is_player(game))
             piece_types = pickled_game.get("piece_types")
-            analyzed._acpl_white = pickled_game.get("acpl_white")
-            analyzed._acpl_black = pickled_game.get("acpl_black")
+            analyzed._acpl_player = pickled_game.get("acpl_white")
             analyzed._acpl_opening = pickled_game.get("acpl_opening")
 
             if "losses" in pickled_game and "moves" in pickled_game:
@@ -93,7 +91,7 @@ def decode_from_pickle(all_games_data: list, player: Player, analyzer: EngineAna
                             # pickled_game["is_sacrifices"],
                             pickled_game["is_mobile"],
                             pickled_game["development_gains"],
-                            strict=True
+                            strict=True,
                         )
                     )
                 ]
@@ -114,7 +112,13 @@ async def get_games_from_lichess(
         "User-Agent": "chessprograms/1.0 (https://https://github.com/there-is-noone/ChessProjects)",
     }
 
-    params = {"moves": "true", "finished": "true", "clocks": "true", "evals": "true"}
+    params = {
+        "moves": "true",
+        "finished": "true",
+        "clocks": "true",
+        "evals": "true",
+        "opening": "true",
+    }
 
     if max_games is not None:
         params["max"] = str(max_games)
@@ -168,8 +172,8 @@ async def analyze(
 
     all_games_data = []
     for game in data:
-        analyzed_game = AnalyzedGame(game, analyzer)
-        await analyzed_game.precompute_acpl()
+        analyzed_game = AnalyzedGame(game, analyzer,player.which_color_is_player(game))
+        await analyzed_game.calculate_acpl()
         player.add_game(analyzed_game)
 
         all_games_data.append(serialize_game(analyzed_game))

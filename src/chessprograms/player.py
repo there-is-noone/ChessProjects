@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-import chess
+import chess.pgn
 
 from chessprograms.analyzedgame import AnalyzedGame
 
@@ -27,10 +27,10 @@ class Player:
             result += f"{game.game.headers['White']} vs {game.game.headers['Black']}:{game.get_result()}\n"
         return result
 
-    def which_color_is_player(self, game: AnalyzedGame):
-        if game.game.headers["White"] == self.PlayerName:
+    def which_color_is_player(self, game: chess.pgn.Game):
+        if game.headers["White"] == self.PlayerName:
             return chess.WHITE
-        elif game.game.headers["Black"] == self.PlayerName:
+        elif game.headers["Black"] == self.PlayerName:
             return chess.BLACK
         else:
             return None
@@ -42,7 +42,7 @@ class Player:
         0.0 if lost
         0.5 for a draw"""
 
-        color = self.which_color_is_player(game)
+        color = self.which_color_is_player(game.game)
 
         if game.get_result() == "1-0":
             return 1.0 if color == chess.WHITE else 0.0

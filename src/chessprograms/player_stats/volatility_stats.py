@@ -22,7 +22,7 @@ class VolatilityStats:
         for game in self.player.iterate_games():
             if len(game.move_analysis) <= 2:
                 continue
-            volatilities = game.volatilities(self.player.which_color_is_player(game))
+            volatilities = game.volatilities(self.player.which_color_is_player(game.game))
 
             volatilities_variances.append(np.var(volatilities))
 

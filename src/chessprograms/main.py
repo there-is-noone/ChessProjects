@@ -1,6 +1,6 @@
 import asyncio
-import os.path
 import os
+import os.path
 
 import chess.engine
 import chess.pgn
@@ -16,10 +16,9 @@ from utils.stopwatch import Timer
 
 
 async def main():
-    player_name = ConfigData.PLAYER_NAME
-    choice = input("Insert the player lichess nickname: ")
-    if choice != "":
-        player_name = choice
+
+    player_name = input("Insert the player lichess nickname: ").strip() or ConfigData.PLAYER_NAME
+
     # initializing the objects used througout the program
     transport, engine = await chess.engine.popen_uci(ConfigData.ENGINE_PATH)
     await engine.configure({"Threads": ConfigData.THREADS})
@@ -28,17 +27,17 @@ async def main():
     test = Player(player_name)
     stats = PlayerStats(test)
 
-    AnalyzedGame._opening_book = openingbook.check_for_opening_book()
     pickle_file = f"data/analysis{player_name}{ConfigData.ENGINE_ANALYSIS_TYPE}.pkl"
     file_path = f"/home/kkrec/chessgames/{player_name}.pgn"
 
     # loading/saving analyzed games
     if os.path.exists(pickle_file):
         all_games_data = loading.load_from_pickle(pickle_file)
-        loading.decode_from_pickle(all_games_data, test,analyzer)
+        loading.decode_from_pickle(all_games_data, test, analyzer)
 
     elif os.path.exists(file_path):
-        await loading.load_from_file(file_path, test, analyzer, pickle_file)
+        games_list = loading.load_from_file(file_path, test, analyzer, pickle_file)
+        await loading.analyze(games_list, test, analyzer, pickle_file)
 
     else:
         print("Found the profile")
