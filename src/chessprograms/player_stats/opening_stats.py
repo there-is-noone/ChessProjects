@@ -2,7 +2,6 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 
 import chessprograms.utils.math_stat as math_stats
-from chessprograms.openings.openingbook import OpeningBook
 from chessprograms.openings.ecocode import ECOCode
 from chessprograms.player import Player
 from chessprograms.utils.Config import ConfigData

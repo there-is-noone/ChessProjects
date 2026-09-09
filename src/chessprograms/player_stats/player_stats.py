@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
 
-from chessprograms.openings.openingbook import OpeningBook
 from chessprograms.player import Player
 from chessprograms.player_stats.acpl_stats import AcplStats
 from chessprograms.player_stats.comeback_stats import ComebackStats

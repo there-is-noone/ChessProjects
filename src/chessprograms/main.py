@@ -5,9 +5,7 @@ import os.path
 import chess.engine
 import chess.pgn
 import loading
-from analyzedgame import AnalyzedGame
 from engineanalyzer import EngineAnalyzer
-from openings import openingbook
 from player import Player
 from player_stats.player_stats import PlayerStats
 from utils.Config import ConfigData

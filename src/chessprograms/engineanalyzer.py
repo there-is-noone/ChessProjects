@@ -70,39 +70,10 @@ class EngineAnalyzer:
     async def get_eval_and_best_move(
         self, board: chess.Board
     ) -> tuple[int | None, chess.Move | None]:
-        """Back-compat wrapper — same signature as before, first PV move only."""
+        
         score, pv = await self.get_eval_and_pv(board)
         best_move = pv[0] if pv else None
         return score, best_move
-
-    async def _walk_forward_until_settled(
-        self,
-        board: chess.Board,
-        color: chess.Color,
-        diff_before: int,
-        max_plies: int,
-        target_square: chess.Square,
-    ) -> int:
-        """Follows recaptures on target_square only — the square the
-        triggering move just landed on. A capture or check elsewhere on the
-        board is a separate tactical event and shouldn't be folded into this
-        move's material verdict, even though it's technically 'forcing'."""
-        pushed = 0
-        while pushed < max_plies:
-            _, pv = await self.get_eval_and_pv(board)
-            if not pv:
-                break
-            candidate = pv[0]
-            if not board.is_legal(candidate):
-                break
-            if not (board.is_capture(candidate) and candidate.to_square == target_square):
-                break  # not a recapture on this square -- different event, stop here
-            board.push(candidate)
-            pushed += 1
-            diff_now = analyzedgame.material_diff(board, color)
-            if diff_before - diff_now <= ConfigData.SACRIFICE_MATERIAL_THRESHOLD:
-                break
-        return pushed
 
     async def analyze_game(self, game: chess.pgn.Game) -> list[MoveAnalysis]:
         """Gathers all of the evaluations for a single game"""
@@ -193,30 +164,6 @@ class EngineAnalyzer:
             mobility_after = analyzedgame.mobility(board, color)
             king_pressure_after = analyzedgame.king_pressure(board, color)
 
-            """if enemy_best_move is not None:
-            
-                has_capture_available = any(board.is_capture(m) for m in board.legal_moves)
-
-                if has_capture_available:
-                    diff_before = analyzedgame.material_diff(board, color)
-                    print(board.fen())
-                    plies_pushed = await self._walk_forward_until_settled(
-                        board, color, diff_before, ConfigData.SACRIFICE_QUIESCENCE_PLIES,move.to_square
-                    )
-
-                    diff_after = analyzedgame.material_diff(board, color)
-
-                    if diff_before - diff_after > ConfigData.SACRIFICE_MATERIAL_THRESHOLD:
-                        if not analyzedgame.AnalyzedGame.is_endgame(board):
-                            print("FOUND A SAC")
-                            print(diff_before - diff_after)
-                            print(board.fen())
-                            print()
-                            is_sacrifice = True
-
-                    for _ in range(plies_pushed):
-                        board.pop()"""
-
             is_mobile = mobility_after > mobility_before
             pressure_gain = king_pressure_after - king_pressure_before
 
@@ -232,7 +179,6 @@ class EngineAnalyzer:
                     moving_color,
                     piece_type,
                     development_adv,
-                    # is_sacrifice,
                     is_mobile,
                     pressure_gain,
                 )

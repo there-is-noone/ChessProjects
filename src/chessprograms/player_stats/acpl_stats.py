@@ -36,13 +36,14 @@ class AcplStats:
     def acpl_opening_list(self) -> list[float]:
         """Gathers all of the acpl computed for the moves in the openings"""
 
-        if self._acpl_opening_list is None:
-            self._acpl_opening_list = []
+        if self._acpl_opening_list is not None:
+            return self._acpl_opening_list
+        self._acpl_opening_list = []
 
-            for game in self.player.Games:
-                val = game.acpl_opening
-                if val is not None:
-                    self._acpl_opening_list.append(val)
+        for game in self.player.Games:
+            val = game.acpl_opening
+            if val is not None:
+                self._acpl_opening_list.append(val)
 
         return self._acpl_opening_list
 
@@ -65,10 +66,7 @@ class AcplStats:
 
         if self._acpl is None:
             self._acpl = []
-            tasks = [
-                game.calculate_acpl()
-                for game in self.player.iterate_games()
-            ]
+            tasks = [game.calculate_acpl() for game in self.player.iterate_games()]
 
             results = await asyncio.gather(*tasks)
 

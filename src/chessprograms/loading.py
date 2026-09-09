@@ -172,7 +172,7 @@ async def analyze(
 
     all_games_data = []
     for game in data:
-        analyzed_game = AnalyzedGame(game, analyzer,player.which_color_is_player(game))
+        analyzed_game = AnalyzedGame(game, analyzer, player.which_color_is_player(game))
         await analyzed_game.calculate_acpl()
         player.add_game(analyzed_game)
 

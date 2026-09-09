@@ -7,11 +7,10 @@ import enums
 
 import chessprograms.utils.math_stat as math_stats
 from chessprograms.engineanalyzer import EngineAnalyzer
-from chessprograms.openings.openingbook import OpeningBook
+from chessprograms.openings.ecocode import ECOCode
 from chessprograms.utils import moveanalysis
 from chessprograms.utils.Config import ConfigData
 from chessprograms.utils.moveanalysis import MoveAnalysis
-from chessprograms.openings.ecocode import ECOCode
 
 if TYPE_CHECKING:
     from chessprograms.player import Player
@@ -159,11 +158,15 @@ class AnalyzedGame:
 
     @property
     def acpl_midgame(self):
-        return self._calculate_phase_acpl(self.transition_opening_to_mid,self.transition_mid_to_endgame, "_acpl_midgame")
+        return self._calculate_phase_acpl(
+            self.transition_opening_to_mid, self.transition_mid_to_endgame, "_acpl_midgame"
+        )
 
     @property
     def acpl_endgame(self):
-        return self._calculate_phase_acpl(self.transition_mid_to_endgame, len(self.move_analysis), "_acpl_endgame")
+        return self._calculate_phase_acpl(
+            self.transition_mid_to_endgame, len(self.move_analysis), "_acpl_endgame"
+        )
 
     @functools.cached_property
     def transition_mid_to_endgame(self):
@@ -178,8 +181,6 @@ class AnalyzedGame:
             if self.is_endgame(board):
                 return board.ply()
         return board.ply()
-
-
 
     @property
     def blunder_list(self):
@@ -227,12 +228,9 @@ class AnalyzedGame:
 
     def which_color_developed_faster(self):
         move = self.transition_opening_to_mid - 2
-        try:
-            development_advantage_at_move = self.move_analysis[move].development_advantage
-        except (IndexError, TypeError):
-            print("this game is a mistaken one")
-            print(self.move_analysis)
-            return None
+
+        development_advantage_at_move = self.move_analysis[move].development_advantage
+
         if development_advantage_at_move > ConfigData.DEVELOPMENT_DIFFERENCE:
             return chess.WHITE
         elif development_advantage_at_move < -ConfigData.DEVELOPMENT_DIFFERENCE:
