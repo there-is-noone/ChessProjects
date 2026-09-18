@@ -183,17 +183,40 @@ class AnalyzedGame:
         return board.ply()
 
     @property
-    def blunder_list(self):
+    def mistake_list(self):
         return [
             move
             for move in self.move_analysis
             if move.severity != moveanalysis.BlunderSeverity.NONE
         ]
 
+    def mistake_severity_counter_per_phase(
+        self, start: int = 0, end: int | None = None
+    ) -> tuple[int, int]:
+        if end is None:
+            end = len(self.move_analysis)
+        return sum(move.severity.value for move in (self.move_analysis[start : end + 1])), (
+            end - start
+        )
+
+    @property
+    def mistake_severity_opening(self):
+        return self.mistake_severity_counter_per_phase(0, self.transition_opening_to_mid)
+
+    @property
+    def mistake_severity_midgame(self):
+        return self.mistake_severity_counter_per_phase(
+            self.transition_opening_to_mid, self.transition_mid_to_endgame
+        )
+
+    @property
+    def mistake_severity_endgame(self):
+        return self.mistake_severity_counter_per_phase(self.transition_mid_to_endgame)
+
     @property
     def blunder_count(self):
         return sum(
-            move.severity == moveanalysis.BlunderSeverity.BLUNDER for move in self.blunder_list
+            move.severity == moveanalysis.BlunderSeverity.BLUNDER for move in self.mistake_list
         )
 
     def had_comeback(self, player: "Player", color: chess.Color, threshold: int = -200):

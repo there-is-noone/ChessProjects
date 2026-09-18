@@ -9,8 +9,8 @@ from chessprograms.utils.Config import ConfigData
 class BlunderSeverity(Enum):
     NONE = 0
     INACCURACY = 1  # 50–100cp
-    MISTAKE = 2  # 100–300cp
-    BLUNDER = 3  # >300cp
+    MISTAKE = 1.5  # 100–300cp
+    BLUNDER = 2  # >300cp
 
 
 @dataclass

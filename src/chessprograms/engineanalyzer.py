@@ -70,7 +70,7 @@ class EngineAnalyzer:
     async def get_eval_and_best_move(
         self, board: chess.Board
     ) -> tuple[int | None, chess.Move | None]:
-        
+
         score, pv = await self.get_eval_and_pv(board)
         best_move = pv[0] if pv else None
         return score, best_move

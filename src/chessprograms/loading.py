@@ -169,14 +169,14 @@ async def analyze(
     data: list[chess.pgn.Game], player: Player, analyzer: EngineAnalyzer, pickle_file
 ):
     print("start Analyzing")
+    with Timer("game analysis"):
+        all_games_data = []
+        for game in data:
+            analyzed_game = AnalyzedGame(game, analyzer, player.which_color_is_player(game))
+            await analyzed_game.calculate_acpl()
+            player.add_game(analyzed_game)
 
-    all_games_data = []
-    for game in data:
-        analyzed_game = AnalyzedGame(game, analyzer, player.which_color_is_player(game))
-        await analyzed_game.calculate_acpl()
-        player.add_game(analyzed_game)
-
-        all_games_data.append(serialize_game(analyzed_game))
+            all_games_data.append(serialize_game(analyzed_game))
 
     with Timer("pickling the games"):
         with open(pickle_file, "wb") as f:

@@ -76,6 +76,15 @@ async def main():
                 stats.acpl_stats.coefficient_of_variation_endgame,
             )
 
+        with Timer("All game blunder sev"):
+            print(
+                "Blunder severity",
+                stats.tactical_stats.average_blunder_rate,
+            )
+            print("Opening severity", stats.tactical_stats.opening_mistake_rate)
+            print("Midgame severity", stats.tactical_stats.midgame_mistake_rate)
+            print("Endgame severity", stats.tactical_stats.endgame_mistake_rate)
+
     with Timer("opening name check"):
         print("Winrate_per_eco: ", stats.opening_stats.winrate_per_eco, "%")
         print("Three best performing openings", stats.opening_stats.three_best_performing_openings)

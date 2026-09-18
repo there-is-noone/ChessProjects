@@ -43,3 +43,43 @@ class TacticalStats:
             sum(game.blunder_count for game in self.player.iterate_games()),
             sum(len(game.move_analysis) for game in self.player.iterate_games()),
         )
+
+    @property
+    def average_blunder_rate(self) -> float:
+        blunder_sev = 0
+        move_count = 0
+        for game in self.player.iterate_games():
+            curr_sev, curr_move = game.mistake_severity_counter_per_phase()
+            blunder_sev += curr_sev
+            move_count += curr_move
+        return blunder_sev / move_count if move_count else 0.0
+
+    @property
+    def opening_mistake_rate(self) -> float:
+        blunder_sev = 0
+        move_count = 0
+        for game in self.player.iterate_games():
+            curr_sev, curr_move = game.mistake_severity_opening
+            blunder_sev += curr_sev
+            move_count += curr_move
+        return blunder_sev / move_count if move_count else 0.0
+
+    @property
+    def midgame_mistake_rate(self) -> float:
+        blunder_sev = 0
+        move_count = 0
+        for game in self.player.iterate_games():
+            curr_sev, curr_move = game.mistake_severity_midgame
+            blunder_sev += curr_sev
+            move_count += curr_move
+        return blunder_sev / move_count if move_count else 0.0
+
+    @property
+    def endgame_mistake_rate(self) -> float:
+        blunder_sev = 0
+        move_count = 0
+        for game in self.player.iterate_games():
+            curr_sev, curr_move = game.mistake_severity_endgame
+            blunder_sev += curr_sev
+            move_count += curr_move
+        return blunder_sev / move_count if move_count else 0.0
