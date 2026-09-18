@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 import chess
 
-from chessprograms.player import Player
+from player import Player
 
 
 @dataclass

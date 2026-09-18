@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from chessprograms.player import Player
+from player import Player
 
 
 @dataclass

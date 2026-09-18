@@ -2,9 +2,9 @@ from dataclasses import dataclass, field
 
 import chess
 
-import chessprograms.utils.math_stat as math_stats
-from chessprograms.player import Player
-from chessprograms.player_stats.winrate_stats import WinrateStats
+import utils.math_stat as math_stats
+from player import Player
+from player_stats.winrate_stats import WinrateStats
 
 
 @dataclass

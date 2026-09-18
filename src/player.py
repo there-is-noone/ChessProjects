@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 
 import chess.pgn
 
-from chessprograms.analyzedgame import AnalyzedGame
+from analyzedgame import AnalyzedGame
 
 
 @dataclass

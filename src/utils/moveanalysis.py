@@ -3,7 +3,7 @@ from enum import Enum
 
 import chess
 
-from chessprograms.utils.Config import ConfigData
+from utils.Config import ConfigData
 
 
 class BlunderSeverity(Enum):

@@ -2,9 +2,9 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-import chessprograms.utils.math_stat as math_stats
-from chessprograms.player import Player
-from chessprograms.utils.Config import ConfigData
+import utils.math_stat as math_stats
+from player import Player
+from utils.Config import ConfigData
 
 
 @dataclass

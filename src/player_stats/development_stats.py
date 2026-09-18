@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
-import chessprograms.utils.math_stat as math_stats
-from chessprograms.player import Player
+import utils.math_stat as math_stats
+from player import Player
 
 
 @dataclass

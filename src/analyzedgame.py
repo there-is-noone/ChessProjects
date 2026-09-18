@@ -5,15 +5,15 @@ from typing import TYPE_CHECKING
 import chess.pgn
 import enums
 
-import chessprograms.utils.math_stat as math_stats
-from chessprograms.engineanalyzer import EngineAnalyzer
-from chessprograms.openings.ecocode import ECOCode
-from chessprograms.utils import moveanalysis
-from chessprograms.utils.Config import ConfigData
-from chessprograms.utils.moveanalysis import MoveAnalysis
+import utils.math_stat as math_stats
+from engineanalyzer import EngineAnalyzer
+from openings.ecocode import ECOCode
+from utils import moveanalysis
+from utils.Config import ConfigData
+from utils.moveanalysis import MoveAnalysis
 
 if TYPE_CHECKING:
-    from chessprograms.player import Player
+    from player import Player
 
 
 @dataclass(repr=False)

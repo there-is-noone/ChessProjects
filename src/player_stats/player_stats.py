@@ -1,15 +1,15 @@
 from dataclasses import dataclass, field
 
-from chessprograms.player import Player
-from chessprograms.player_stats.acpl_stats import AcplStats
-from chessprograms.player_stats.comeback_stats import ComebackStats
-from chessprograms.player_stats.development_stats import DevelopmentStats
-from chessprograms.player_stats.opening_stats import OpeningStats
-from chessprograms.player_stats.performance_stats import PerformanceStats
-from chessprograms.player_stats.piece_stats import PieceStats
-from chessprograms.player_stats.tactical_stats import TacticalStats
-from chessprograms.player_stats.volatility_stats import VolatilityStats
-from chessprograms.player_stats.winrate_stats import WinrateStats
+from player import Player
+from player_stats.acpl_stats import AcplStats
+from player_stats.comeback_stats import ComebackStats
+from player_stats.development_stats import DevelopmentStats
+from player_stats.opening_stats import OpeningStats
+from player_stats.performance_stats import PerformanceStats
+from player_stats.piece_stats import PieceStats
+from player_stats.tactical_stats import TacticalStats
+from player_stats.volatility_stats import VolatilityStats
+from player_stats.winrate_stats import WinrateStats
 
 
 @dataclass

@@ -6,7 +6,7 @@ import chess
 
 @dataclass
 class ConfigData:
-    NODES = 5000
+    NODES = 3000
     EVALUATION_LIMIT = 50
     THREADS = max(1, (os.cpu_count() or 1) - 2)
     MAX_CACHE_SIZE = 50000

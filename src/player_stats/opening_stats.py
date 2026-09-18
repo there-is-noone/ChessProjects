@@ -1,10 +1,10 @@
 from collections import defaultdict
 from dataclasses import dataclass, field
 
-import chessprograms.utils.math_stat as math_stats
-from chessprograms.openings.ecocode import ECOCode
-from chessprograms.player import Player
-from chessprograms.utils.Config import ConfigData
+import utils.math_stat as math_stats
+from openings.ecocode import ECOCode
+from player import Player
+from utils.Config import ConfigData
 
 
 @dataclass

@@ -5,11 +5,11 @@ import chess
 import chess.engine
 import chess.pgn
 
-import chessprograms.enums as enums
-from chessprograms import analyzedgame
-from chessprograms.utils.Config import ConfigData
-from chessprograms.utils.EngineStrategies import EngineStrategies
-from chessprograms.utils.moveanalysis import MoveAnalysis
+import enums as enums
+import analyzedgame
+from utils.Config import ConfigData
+from utils.EngineStrategies import EngineStrategies
+from utils.moveanalysis import MoveAnalysis
 
 
 @dataclass

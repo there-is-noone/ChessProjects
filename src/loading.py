@@ -7,9 +7,9 @@ import chess.pgn
 from utils.moveanalysis import MoveAnalysis
 from utils.stopwatch import Timer
 
-from chessprograms.analyzedgame import AnalyzedGame, serialize_game
-from chessprograms.engineanalyzer import EngineAnalyzer
-from chessprograms.player import Player
+from analyzedgame import AnalyzedGame, serialize_game
+from engineanalyzer import EngineAnalyzer
+from player import Player
 
 
 def load_from_file(file, player: Player, analyzer: EngineAnalyzer, pickle_file):
