@@ -101,7 +101,7 @@ def decode_from_pickle(all_games_data: list, player: Player, analyzer: EngineAna
 async def get_games_from_lichess(
     username: str,
     perf_types: list[str] | None = None,
-    max_games: int | None = 200,
+    max_games: int | None = 100,
     rated_only: bool | None = True,
 ) -> list[chess.pgn.Game]:
 

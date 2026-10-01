@@ -6,7 +6,7 @@ import chess
 
 @dataclass
 class ConfigData:
-    NODES = 3000
+    NODES = 1000000
     EVALUATION_LIMIT = 50
     THREADS = max(1, (os.cpu_count() or 1) - 2)
     MAX_CACHE_SIZE = 50000
@@ -25,7 +25,7 @@ class ConfigData:
     DEVELOPMENT_DIFFERENCE = 0.5
 
     ENGINE_PATH = "/home/kkrec/stockfish/stockfish-ubuntu-x86-64-avx2"
-    PLAYER_NAME = "Tal, Mihail"
+    PLAYER_NAME = "graczumerx"
     ENGINE_ANALYSIS_TYPE = "acpl_deep"
     OPENING_BOOK_PATH = "opening_book.pkl"
 

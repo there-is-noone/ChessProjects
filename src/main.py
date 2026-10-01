@@ -29,11 +29,11 @@ async def main():
     file_path = f"/home/kkrec/chessgames/{player_name}.pgn"
 
     # loading/saving analyzed games
-    if os.path.exists(pickle_file):
+    """if os.path.exists(pickle_file):
         all_games_data = loading.load_from_pickle(pickle_file)
-        loading.decode_from_pickle(all_games_data, test, analyzer)
+        loading.decode_from_pickle(all_games_data, test, analyzer)"""
 
-    elif os.path.exists(file_path):
+    if os.path.exists(file_path):
         games_list = loading.load_from_file(file_path, test, analyzer, pickle_file)
         await loading.analyze(games_list, test, analyzer, pickle_file)
 
@@ -48,13 +48,13 @@ async def main():
     # everything under it is just testing how the program has calculated the stats
     # will be changed a lot, will take shape after having a distinct first alpha version
 
-    with Timer("basic stats"):
+    """with Timer("basic stats"):
         print("Winrate:", stats.winrate_stats.winrate, "%")
         print("Short game rate:", stats.winrate_stats.short_game_rate, "%")
         print("Short game winrate:", stats.winrate_stats.short_game_win_rate, "%")
         print("Endgame rate:", stats.winrate_stats.endgame_rate, "%")
         print("Endgame win rate:", stats.winrate_stats.endgame_win_rate, "%")
-    await engine.quit()
+    await engine.quit()"""
 
     with Timer("stats based on acpl"):
         with Timer("Coefficient of variation time"):
@@ -85,12 +85,11 @@ async def main():
             print("Midgame severity", stats.tactical_stats.midgame_mistake_rate)
             print("Endgame severity", stats.tactical_stats.endgame_mistake_rate)
 
-    with Timer("opening name check"):
+    """with Timer("opening name check"):
         print("Winrate_per_eco: ", stats.opening_stats.winrate_per_eco, "%")
         print("Three best performing openings", stats.opening_stats.three_best_performing_openings)
 
-    with Timer("development check"):
-        """for i, game in enumerate(test.Games):
+        for i, game in enumerate(test.Games):
             if game.which_color_developed_faster() == chess.WHITE:
                 print("White was faster")
                 print(game.transition_opening_to_mid)
@@ -100,14 +99,15 @@ async def main():
                 print("Black was faster")
                 print(game.transition_opening_to_mid)
                 print(i)
-                print()"""
-        """for i, game in enumerate(test.Games):
-            print("White" if game.which_color_attacked() == chess.WHITE else "Black")"""
+                print()
+        for i, game in enumerate(test.Games):
+            print("White" if game.which_color_attacked() == chess.WHITE else "Black")
 
         print(
             f"how often you get developed faster: {stats.development_stats.development_advantage_percentage}%"
         )
 
+    """
     with Timer("Volatilities check"):
         print(f"mean of volatilities: {stats.volatility_stats.mean}")
         print(f"volatility index for calculation: {stats.volatility_stats.index()}")
@@ -122,10 +122,8 @@ async def main():
 
         print(f"blunder rate: {stats.tactical_stats.blunder_rate}%")
 
-    """with Timer("sacrifice percentage"):
-        print(f"percentage of sacced games: {stats.sacrifice_percentage()}%")"""
 
-    with Timer("percentage of game forcing moves analysis"):
+    """ with Timer("percentage of game forcing moves analysis"):
         print(f"percentage of forced moves: {stats.tactical_stats.percentage_of_forcing_moves}%")
 
     with Timer("mobile moves"):
@@ -167,7 +165,7 @@ async def main():
     with Timer("Lost chances analysis"):
         print(f"Lost chances rate: {stats.comeback_stats.lost_chances_rate}%")
 
-        """    with Timer("Gambit Check"):
+            with Timer("Gambit Check"):
         for nr, game in enumerate(test.Games[:1000]):
             if game.is_gambit:
                 print(game.opening_name)

@@ -1,9 +1,9 @@
 [project]
 name = "chessprograms"
-version = "0.1.0"
+version = "0.1.1"
 description = "Chess game analysis and processing toolkit"
 authors = [
-    { name = "Your Name" }
+    { name = "Kamil Kręcigłowa" }
 ]
 readme = "README.md"
 requires-python = ">=3.10"
@@ -16,7 +16,7 @@ dependencies = [
 ]
 
 [project.scripts]
-chessprograms = "chessprograms.main:main"
+chessprograms = "main:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -24,7 +24,7 @@ build-backend = "hatchling.build"
 
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/chessprograms"]
+packages = ["src/"]
 
 
 
