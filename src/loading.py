@@ -4,12 +4,12 @@ from io import StringIO
 
 import aiohttp
 import chess.pgn
-from utils.moveanalysis import MoveAnalysis
-from utils.stopwatch import Timer
 
 from analyzedgame import AnalyzedGame, serialize_game
 from engineanalyzer import EngineAnalyzer
 from player import Player
+from utils.moveanalysis import MoveAnalysis
+from utils.stopwatch import Timer
 
 
 def load_from_file(file, player: Player, analyzer: EngineAnalyzer, pickle_file):
@@ -66,8 +66,6 @@ def decode_from_pickle(all_games_data: list, player: Player, analyzer: EngineAna
                         color=chess.WHITE if idx % 2 == 0 else chess.BLACK,
                         piece_type=piece_type,
                         development_advantage=dev_adv,
-                        # is_sacrifice=is_sacrifice,
-                        is_mobile=is_mobile,
                         pressure_gain=pressure_gain,
                     )
                     for idx, (
@@ -77,7 +75,6 @@ def decode_from_pickle(all_games_data: list, player: Player, analyzer: EngineAna
                         eval_after_val,
                         dev_adv,
                         piece_type,
-                        # is_sacrifice,
                         is_mobile,
                         pressure_gain,
                     ) in enumerate(
@@ -88,7 +85,6 @@ def decode_from_pickle(all_games_data: list, player: Player, analyzer: EngineAna
                             pickled_game["evals_after"],
                             development,
                             piece_types,
-                            # pickled_game["is_sacrifices"],
                             pickled_game["is_mobile"],
                             pickled_game["development_gains"],
                             strict=True,
@@ -101,7 +97,7 @@ def decode_from_pickle(all_games_data: list, player: Player, analyzer: EngineAna
 async def get_games_from_lichess(
     username: str,
     perf_types: list[str] | None = None,
-    max_games: int | None = 100,
+    max_games: int | None = 50,
     rated_only: bool | None = True,
 ) -> list[chess.pgn.Game]:
 

@@ -44,7 +44,7 @@ class WinrateStats:
             result = 0
             count = 0
             for game in self.player.iterate_games():
-                if self.player.which_color_is_player(game) == chess.BLACK:
+                if self.player.which_color_is_player(game.game) == chess.BLACK:
                     result += self.player.did_player_win(game) == 1.0
                     count += 1
             self._winrate_black = math_stats.percentage(result, count) if count else 0

@@ -6,7 +6,7 @@ authors = [
     { name = "Kamil Kręcigłowa" }
 ]
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 
 dependencies = [
     "python-chess>=1.999",

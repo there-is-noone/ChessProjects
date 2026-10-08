@@ -3,8 +3,8 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 import chess.pgn
-import enums
 
+import enums
 import utils.math_stat as math_stats
 from engineanalyzer import EngineAnalyzer
 from openings.ecocode import ECOCode
@@ -61,8 +61,10 @@ class AnalyzedGame:
         self._acpl_player = math_stats.mean([m.loss for m in player_moves]) if player_moves else 0.0
         return self._acpl_player
 
-    @staticmethod
-    def is_endgame(board: chess.Board) -> bool:
+    def is_endgame(self, board: chess.Board) -> bool:
+        if self.is_opening(board):
+            return False
+
         pieces = board.piece_map()
 
         non_pawn = sum(1 for piece in pieces.values() if piece.piece_type != chess.PAWN)
@@ -77,8 +79,7 @@ class AnalyzedGame:
         board = self.game.end().board()
         return self.is_endgame(board)
 
-    @staticmethod
-    def is_opening(board: chess.Board) -> bool:
+    def is_opening(self, board: chess.Board) -> bool:
         """checks if the position is in the opening using heuristics"""
 
         if board.ply() < 14:
@@ -138,7 +139,7 @@ class AnalyzedGame:
     def opening_name(self) -> str | None:
         return self.game.headers.get("Opening", "Unknown")
 
-    def _calculate_phase_acpl(self, start: int, end: int, cache_attr: str) -> float:
+    def _calculate_phase_acpl(self, start: int, end: int, cache_attr: str) -> float | None:
         cached = getattr(self, cache_attr)
         if cached is not None:
             return cached
@@ -150,6 +151,8 @@ class AnalyzedGame:
 
         res = math_stats.mean([m.loss for m in phase_moves]) if phase_moves else 0.0
         setattr(self, cache_attr, res)
+        if res == 0:
+            return None
         return res
 
     @property
@@ -188,6 +191,7 @@ class AnalyzedGame:
             move
             for move in self.move_analysis
             if move.severity != moveanalysis.BlunderSeverity.NONE
+            and move.color == self.player_color
         ]
 
     def mistake_severity_counter_per_phase(
@@ -195,9 +199,11 @@ class AnalyzedGame:
     ) -> tuple[int, int]:
         if end is None:
             end = len(self.move_analysis)
-        return sum(move.severity.value for move in (self.move_analysis[start : end + 1])), (
-            end - start
-        )
+        return sum(
+            move.severity.value
+            for move in (self.move_analysis[start:end])
+            if move.color == self.player_color
+        ), (end - start)
 
     @property
     def mistake_severity_opening(self):
@@ -216,7 +222,9 @@ class AnalyzedGame:
     @property
     def blunder_count(self):
         return sum(
-            move.severity == moveanalysis.BlunderSeverity.BLUNDER for move in self.mistake_list
+            move.severity == moveanalysis.BlunderSeverity.BLUNDER
+            for move in self.mistake_list
+            if move.color == self.player_color
         )
 
     def had_comeback(self, player: "Player", color: chess.Color, threshold: int = -200):
@@ -291,17 +299,15 @@ class AnalyzedGame:
 
     @property
     def forcing_moves(self):
-        board = chess.Board()
-        node = self.game
+        board = self.game.board()
         counter = 0
         counter_forcing = 0
-        while not node.is_end():
-            node = node.variations[0]
-            if board.gives_check(node.move) or board.is_capture(node.move):
-                counter_forcing += 1
-            board.push(node.move)
-
-            counter += 1
+        for move in self.move_analysis:
+            if move.color == self.player_color:
+                counter += 1
+                if board.gives_check(move.move) or board.is_capture(move.move):
+                    counter_forcing += 1
+            board.push(move.move)
         return counter, counter_forcing
 
     @property
@@ -309,6 +315,8 @@ class AnalyzedGame:
         counter = 0
         counter_mobile = 0
         for move in self.move_analysis:
+            if move.color != self.player_color:
+                continue
             if move.is_mobile:
                 counter_mobile += 1
             counter += 1
@@ -319,6 +327,8 @@ class AnalyzedGame:
         accumulator = 0
         moves = 0
         for move in self.move_analysis:
+            if move.color != self.player_color:
+                continue
             accumulator += move.pressure_gain
             moves += 1
         return moves, accumulator
@@ -335,6 +345,7 @@ def serialize_game(analyzed: AnalyzedGame):
 
     return {
         "headers": dict(analyzed.game.headers),
+        "moves": [m.move.uci() for m in analysis],
         "moves": [m.move.uci() for m in analysis],
         "evals_before": [m.eval_before for m in analysis],
         "evals_after": [m.eval_after for m in analysis],

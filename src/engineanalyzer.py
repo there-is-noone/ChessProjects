@@ -6,7 +6,7 @@ import chess.engine
 import chess.pgn
 
 import enums as enums
-import analyzedgame
+import utils.board_metrics as board_metrics
 from utils.Config import ConfigData
 from utils.EngineStrategies import EngineStrategies
 from utils.moveanalysis import MoveAnalysis
@@ -33,23 +33,15 @@ class EngineAnalyzer:
         self.cache[fen] = value
 
     @staticmethod
-    def _score_to_value(score: chess.engine.Score) -> int | None:
+    def _score_to_value(score: chess.engine.Score) -> int:
         """Changes the engine score into a float taking into consideration
         mate values"""
-
-        if score.is_mate():
-            value = 10000 if score.mate() > 0 else -10000
-        else:
-            value = score.score()
-        return value
+        return score.score(mate_score=10000)
 
     async def get_eval_and_pv(self, board: chess.Board) -> tuple[int | None, list[chess.Move]]:
         """Gets an engine evaluation and full principal variation for a position."""
 
-        if self.strategy.time_limit:
-            limit = chess.engine.Limit(time=self.strategy.time_limit)
-        else:
-            limit = chess.engine.Limit(nodes=self.strategy.nodes)
+        limit = chess.engine.Limit(nodes=self.strategy.nodes)
 
         fen = board.fen()
         cached = self._cache_get(fen)
@@ -145,8 +137,8 @@ class EngineAnalyzer:
             if board.is_castling(move):
                 development[color]["castled"] = True
 
-            mobility_before = analyzedgame.mobility(board, color)
-            king_pressure_before = analyzedgame.king_pressure(board, color)
+            mobility_before = board_metrics.mobility(board, color)
+            king_pressure_before = board_metrics.king_pressure(board, color)
 
             board.push(move)
 
@@ -154,15 +146,15 @@ class EngineAnalyzer:
 
             if move == best_move:
                 loss = 0
-            elif best_eval is None:
+            elif prev_eval is None or current_eval is None:
                 loss = 0
             elif moving_color == chess.WHITE:
-                loss = max(0, best_eval - current_eval)
+                loss = max(0, prev_eval - current_eval)
             else:
-                loss = max(0, current_eval - best_eval)
+                loss = max(0, current_eval - prev_eval)
 
-            mobility_after = analyzedgame.mobility(board, color)
-            king_pressure_after = analyzedgame.king_pressure(board, color)
+            mobility_after = board_metrics.mobility(board, color)
+            king_pressure_after = board_metrics.king_pressure(board, color)
 
             is_mobile = mobility_after > mobility_before
             pressure_gain = king_pressure_after - king_pressure_before

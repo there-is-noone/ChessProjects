@@ -4,6 +4,7 @@ import os.path
 
 import chess.engine
 import chess.pgn
+
 import loading
 from engineanalyzer import EngineAnalyzer
 from player import Player
@@ -40,7 +41,7 @@ async def main():
     else:
         print("Found the profile")
         data = await loading.get_games_from_lichess(
-            player_name, ["rapid", "blitz", "classical, bullet"]
+            player_name, ["rapid", "blitz", "classical", "bullet"]
         )
         print("Found the games")
         await loading.analyze(data, test, analyzer, pickle_file)
@@ -122,8 +123,7 @@ async def main():
 
         print(f"blunder rate: {stats.tactical_stats.blunder_rate}%")
 
-
-    """ with Timer("percentage of game forcing moves analysis"):
+    with Timer("percentage of game forcing moves analysis"):
         print(f"percentage of forced moves: {stats.tactical_stats.percentage_of_forcing_moves}%")
 
     with Timer("mobile moves"):
@@ -165,7 +165,7 @@ async def main():
     with Timer("Lost chances analysis"):
         print(f"Lost chances rate: {stats.comeback_stats.lost_chances_rate}%")
 
-            with Timer("Gambit Check"):
+    """        with Timer("Gambit Check"):
         for nr, game in enumerate(test.Games[:1000]):
             if game.is_gambit:
                 print(game.opening_name)

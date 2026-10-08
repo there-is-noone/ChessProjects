@@ -6,12 +6,11 @@ import chess
 
 @dataclass
 class ConfigData:
-    NODES = 1000000
+    NODES = 5000
     EVALUATION_LIMIT = 50
-    THREADS = max(1, (os.cpu_count() or 1) - 2)
+    THREADS = max(1, (os.cpu_count() or 1) - 1)
     MAX_CACHE_SIZE = 50000
 
-    SACRIFICE_MAX_LOSS = 20
     INACCURACY_THRESHOLD = 50
     MISTAKE_THRESHOLD = 100
     BLUNDER_THRESHOLD = 200
@@ -29,9 +28,7 @@ class ConfigData:
     ENGINE_ANALYSIS_TYPE = "acpl_deep"
     OPENING_BOOK_PATH = "opening_book.pkl"
 
-    SACRIFICE_MATERIAL_THRESHOLD = 2
     MINIMUM_GAMES_FOR_VALID_WINRATE = 5
-    SACRIFICE_QUIESCENCE_PLIES = 5
     HARDCODED_VALUE_TO_MEASURE_VOLATILITY = 3000
     VOLATILITY_UPPER_BOUND = 500
     PIECE_VALUES = {

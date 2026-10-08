@@ -8,17 +8,6 @@ from player import Player
 class TacticalStats:
     player: Player
 
-    def sacrifice_percentage(self):
-        counter = 0
-        counter_sacrificed = 0
-        for game in self.player.iterate_games():
-            if game.has_a_sacrifice:
-                counter_sacrificed += 1
-            counter += 1
-        print(counter)
-        print(counter_sacrificed)
-        return math_stats.percentage(counter_sacrificed, counter)
-
     @property
     def percentage_of_forcing_moves(self):
         total_counter, total_counter_forcing = 0, 0
