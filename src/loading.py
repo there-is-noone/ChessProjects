@@ -1,8 +1,5 @@
-import asyncio
 import pickle
-from io import StringIO
 
-import aiohttp
 import chess.pgn
 
 from analyzedgame import AnalyzedGame, serialize_game
@@ -66,6 +63,8 @@ def decode_from_pickle(all_games_data: list, player: Player, analyzer: EngineAna
                         color=chess.WHITE if idx % 2 == 0 else chess.BLACK,
                         piece_type=piece_type,
                         development_advantage=dev_adv,
+                        # is_sacrifice=is_sacrifice,
+                        is_mobile=is_mobile,
                         pressure_gain=pressure_gain,
                     )
                     for idx, (
@@ -75,6 +74,7 @@ def decode_from_pickle(all_games_data: list, player: Player, analyzer: EngineAna
                         eval_after_val,
                         dev_adv,
                         piece_type,
+                        # is_sacrifice,
                         is_mobile,
                         pressure_gain,
                     ) in enumerate(
@@ -85,6 +85,7 @@ def decode_from_pickle(all_games_data: list, player: Player, analyzer: EngineAna
                             pickled_game["evals_after"],
                             development,
                             piece_types,
+                            # pickled_game["is_sacrifices"],
                             pickled_game["is_mobile"],
                             pickled_game["development_gains"],
                             strict=True,
@@ -94,75 +95,11 @@ def decode_from_pickle(all_games_data: list, player: Player, analyzer: EngineAna
                 player.add_game(analyzed)
 
 
-async def get_games_from_lichess(
-    username: str,
-    perf_types: list[str] | None = None,
-    max_games: int | None = 50,
-    rated_only: bool | None = True,
-) -> list[chess.pgn.Game]:
-
-    url = f"https://lichess.org/api/games/user/{username}"
-
-    headers = {
-        "Accept": "application/x-chess-pgn",
-        "User-Agent": "chessprograms/1.0 (https://https://github.com/there-is-noone/ChessProjects)",
-    }
-
-    params = {
-        "moves": "true",
-        "finished": "true",
-        "clocks": "true",
-        "evals": "true",
-        "opening": "true",
-    }
-
-    if max_games is not None:
-        params["max"] = str(max_games)
-
-    if perf_types:
-        params["perfType"] = ",".join(perf_types)
-
-    if rated_only is not None:
-        params["rated"] = str(rated_only).lower()
-
-    async with aiohttp.ClientSession() as session:
-        while True:
-            async with session.get(
-                url,
-                headers=headers,
-                params=params,
-            ) as response:
-                if response.status == 404:
-                    raise ValueError(f"Lichess user '{username}' was not found")
-
-                if response.status == 429:
-                    print("429")
-                    retry_after = response.headers.get("Retry-After", "10")
-
-                    wait_time = int(retry_after)
-                    print(wait_time)
-                    await asyncio.sleep(wait_time)
-                    print()
-                    continue
-
-                response.raise_for_status()
-
-                pgn_text = await response.text()
-
-                break
-
-        games = []
-        pgn_io = StringIO(pgn_text)
-
-    while game := chess.pgn.read_game(pgn_io):
-        games.append(game)
-
-    print(len(games))
-    return games
-
-
 async def analyze(
-    data: list[chess.pgn.Game], player: Player, analyzer: EngineAnalyzer, pickle_file
+    data: list[chess.pgn.Game],
+    player: Player,
+    analyzer: EngineAnalyzer,
+    pickle_file: str | None = None,
 ):
     print("start Analyzing")
     with Timer("game analysis"):
@@ -173,7 +110,7 @@ async def analyze(
             player.add_game(analyzed_game)
 
             all_games_data.append(serialize_game(analyzed_game))
-
-    with Timer("pickling the games"):
-        with open(pickle_file, "wb") as f:
-            pickle.dump(all_games_data, f)
+    if pickle_file is not None:
+        with Timer("pickling the games"):
+            with open(pickle_file, "wb") as f:
+                pickle.dump(all_games_data, f)

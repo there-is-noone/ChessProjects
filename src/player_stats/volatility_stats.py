@@ -4,7 +4,6 @@ import numpy as np
 
 import utils.math_stat as math_stats
 from player import Player
-from utils.Config import ConfigData
 
 
 @dataclass
@@ -33,6 +32,3 @@ class VolatilityStats:
     @property
     def mean(self) -> float:
         return math_stats.mean(self.variances)
-
-    def index(self) -> float:
-        return self.mean // ConfigData.HARDCODED_VALUE_TO_MEASURE_VOLATILITY

@@ -9,8 +9,8 @@ import loading
 from engineanalyzer import EngineAnalyzer
 from player import Player
 from player_stats.player_stats import PlayerStats
+from services.lichessservice import fetch_games_from_lichess
 from utils.Config import ConfigData
-from utils.EngineStrategies import STRATEGIES
 from utils.stopwatch import Timer
 
 
@@ -21,8 +21,7 @@ async def main():
     # initializing the objects used througout the program
     transport, engine = await chess.engine.popen_uci(ConfigData.ENGINE_PATH)
     await engine.configure({"Threads": ConfigData.THREADS})
-    strategy = STRATEGIES[ConfigData.ENGINE_ANALYSIS_TYPE]
-    analyzer = EngineAnalyzer(engine, strategy)
+    analyzer = EngineAnalyzer(engine)
     test = Player(player_name)
     stats = PlayerStats(test)
 
@@ -40,7 +39,7 @@ async def main():
 
     else:
         print("Found the profile")
-        data = await loading.get_games_from_lichess(
+        data = await fetch_games_from_lichess(
             player_name, ["rapid", "blitz", "classical", "bullet"]
         )
         print("Found the games")
@@ -111,7 +110,6 @@ async def main():
     """
     with Timer("Volatilities check"):
         print(f"mean of volatilities: {stats.volatility_stats.mean}")
-        print(f"volatility index for calculation: {stats.volatility_stats.index()}")
 
     with Timer("Blunder check"):
         print(

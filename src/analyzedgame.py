@@ -3,8 +3,8 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 import chess.pgn
-
 import enums
+
 import utils.math_stat as math_stats
 from engineanalyzer import EngineAnalyzer
 from openings.ecocode import ECOCode
@@ -61,10 +61,8 @@ class AnalyzedGame:
         self._acpl_player = math_stats.mean([m.loss for m in player_moves]) if player_moves else 0.0
         return self._acpl_player
 
-    def is_endgame(self, board: chess.Board) -> bool:
-        if self.is_opening(board):
-            return False
-
+    @staticmethod
+    def is_endgame(board: chess.Board) -> bool:
         pieces = board.piece_map()
 
         non_pawn = sum(1 for piece in pieces.values() if piece.piece_type != chess.PAWN)
@@ -79,7 +77,8 @@ class AnalyzedGame:
         board = self.game.end().board()
         return self.is_endgame(board)
 
-    def is_opening(self, board: chess.Board) -> bool:
+    @staticmethod
+    def is_opening(board: chess.Board) -> bool:
         """checks if the position is in the opening using heuristics"""
 
         if board.ply() < 14:
@@ -110,10 +109,11 @@ class AnalyzedGame:
         return not (is_developed or kings_castled)
 
     @functools.cached_property
+    @functools.cached_property
     def transition_opening_to_mid(self):
         """Finds the move that is the assumed breakpoint between the opening and middlegame"""
 
-        board = chess.Board()
+        board = self.game.board() 
         for move in self.game.mainline_moves():
             board.push(move)
 
@@ -124,7 +124,7 @@ class AnalyzedGame:
 
     @property
     def opening_moves(self) -> list[chess.Move]:
-        board = chess.Board()
+        board = self.game.board()
         opening = []
 
         for move in self.game.mainline_moves():
@@ -175,7 +175,7 @@ class AnalyzedGame:
     def transition_mid_to_endgame(self):
         """Finds the move that is the assumed breakpoint between the opening and middlegame"""
 
-        board = chess.Board()
+        board = self.game.board()
         node = self.game
         while not node.is_end():
             node = node.variations[0]
@@ -269,27 +269,6 @@ class AnalyzedGame:
         else:
             return None
 
-    def which_color_attacked(self):
-        if self.transition_opening_to_mid is None:
-            return None
-
-        if self.move_analysis is None:
-            return None
-        move = min(self.game.end().ply(), self.transition_opening_to_mid + 1)
-
-        if move < 2:
-            return self.move_analysis[0].color
-
-        prev = self.move_analysis[move - 2]
-        curr = self.move_analysis[move - 1]
-
-        if curr.pieces_offensive > prev.pieces_offensive:
-            return curr.color
-        elif curr.pieces_offensive < prev.pieces_offensive:
-            return prev.color
-        else:
-            return None
-
     def volatilities(self, color):
         volatilities = []
         for move in self.move_analysis:
@@ -335,17 +314,6 @@ class AnalyzedGame:
 
     @property
     def eco_code(self) -> ECOCode:
-        return ECOCode(self.game.headers.get("ECO", "unknown"))
-
-
-def serialize_game(analyzed: AnalyzedGame):
-    """makes AnalyzedGame easier to pickle"""
-
-    analysis = analyzed.move_analysis
-
-    return {
-        "headers": dict(analyzed.game.headers),
-        "moves": [m.move.uci() for m in analysis],
         "moves": [m.move.uci() for m in analysis],
         "evals_before": [m.eval_before for m in analysis],
         "evals_after": [m.eval_after for m in analysis],

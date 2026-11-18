@@ -8,14 +8,12 @@ import chess.pgn
 import enums as enums
 import utils.board_metrics as board_metrics
 from utils.Config import ConfigData
-from utils.EngineStrategies import EngineStrategies
 from utils.moveanalysis import MoveAnalysis
 
 
 @dataclass
 class EngineAnalyzer:
     engine: chess.engine.Protocol
-    strategy: EngineStrategies
     cache: OrderedDict = field(default_factory=OrderedDict)
 
     def _cache_get(self, fen: str) -> tuple[int | None, list[chess.Move]] | None:
@@ -41,7 +39,7 @@ class EngineAnalyzer:
     async def get_eval_and_pv(self, board: chess.Board) -> tuple[int | None, list[chess.Move]]:
         """Gets an engine evaluation and full principal variation for a position."""
 
-        limit = chess.engine.Limit(nodes=self.strategy.nodes)
+        limit = chess.engine.Limit(nodes=ConfigData.NODES)
 
         fen = board.fen()
         cached = self._cache_get(fen)
