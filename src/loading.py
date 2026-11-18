@@ -45,7 +45,7 @@ def decode_from_pickle(all_games_data: list, player: Player, analyzer: EngineAna
                 node = node.add_variation(chess.Move.from_uci(uci_move))
             analyzed = AnalyzedGame(game, analyzer, player.which_color_is_player(game))
             piece_types = pickled_game.get("piece_types")
-            analyzed._acpl_player = pickled_game.get("acpl_white")
+            analyzed._acpl_player = pickled_game.get("acpl_player")
             analyzed._acpl_opening = pickled_game.get("acpl_opening")
 
             if "losses" in pickled_game and "moves" in pickled_game:

@@ -109,7 +109,6 @@ class AnalyzedGame:
         return not (is_developed or kings_castled)
 
     @functools.cached_property
-    @functools.cached_property
     def transition_opening_to_mid(self):
         """Finds the move that is the assumed breakpoint between the opening and middlegame"""
 
@@ -196,14 +195,14 @@ class AnalyzedGame:
 
     def mistake_severity_counter_per_phase(
         self, start: int = 0, end: int | None = None
-    ) -> tuple[int, int]:
+    ) -> tuple[int | float, int]:
         if end is None:
             end = len(self.move_analysis)
-        return sum(
-            move.severity.value
+
+        player_moves = [move
             for move in (self.move_analysis[start:end])
-            if move.color == self.player_color
-        ), (end - start)
+            if move.color == self.player_color]
+        return sum(m.severity.value for m in player_moves), len(player_moves)
 
     @property
     def mistake_severity_opening(self):
@@ -314,6 +313,32 @@ class AnalyzedGame:
 
     @property
     def eco_code(self) -> ECOCode:
+        return ECOCode(self.game.headers.get("ECO", "Unknown"))
+
+def serialize_game(analyzed: AnalyzedGame) -> dict:
+    analysis = analyzed.move_analysis
+    return {
+        "moves": [m.move.uci() for m in analysis],
+        "evals_before": [m.eval_before for m in analysis],
+        "evals_after": [m.eval_after for m in analysis],
+        "losses": [m.loss for m in analysis],
+        "piece_types": [m.piece_type for m in analysis],
+        "development": [m.development_advantage for m in analysis],
+        "acpl_opening": analyzed.acpl_opening,
+        "acpl_player": analyzed._acpl_player,
+        "is_mobile": [m.is_mobile for m in analysis],
+        "development_gains": [m.pressure_gain for m in analysis],
+    }
+
+
+def total_material(board: chess.Board, color: chess.Color | None = None) -> int:
+    total = 0
+
+    colors = [color] if color is not None else [chess.WHITE, chess.BLACK]
+
+    for piece_color in colors:
+        for piece_type, value in ConfigData.PIECE_VALUES.items():
+            total += len(board.pieces(piece_type, piece_color)) * value
         "moves": [m.move.uci() for m in analysis],
         "evals_before": [m.eval_before for m in analysis],
         "evals_after": [m.eval_after for m in analysis],

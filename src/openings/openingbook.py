@@ -7,7 +7,7 @@ from pathlib import Path
 
 import chess.pgn
 
-from chessprograms.utils.Config import ConfigData
+from utils.Config import ConfigData
 
 
 @dataclass

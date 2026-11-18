@@ -16,6 +16,8 @@ class PieceStats:
             if game.move_analysis is None:
                 continue
             for move_analysis in game.move_analysis:
+                if move_analysis.color != game.player_color:
+                    continue
                 distribution[move_analysis.piece_type] += 1
         return distribution
 
